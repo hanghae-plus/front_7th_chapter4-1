@@ -139,7 +139,6 @@ const cartReducer = (state: typeof initialState, action: any) => {
       return state;
   }
 };
-/**
- * 장바구니 스토어 생성
- */
+
 export const cartStore = createStore(cartReducer, initialState);
+export const createCartStore = (state = initialState) => createStore(cartReducer, state);

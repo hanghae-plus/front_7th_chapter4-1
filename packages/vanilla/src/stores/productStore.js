@@ -25,7 +25,7 @@ export const initialProductState = {
 /**
  * 상품 스토어 리듀서
  */
-const productReducer = (state, action) => {
+export const productReducer = (state, action) => {
   switch (action.type) {
     case PRODUCT_ACTIONS.SET_STATUS:
       return {
@@ -100,7 +100,4 @@ const productReducer = (state, action) => {
   }
 };
 
-/**
- * 상품 스토어 생성
- */
-export const productStore = createStore(productReducer, initialProductState);
+export const createProductStore = (state = initialProductState) => createStore(productReducer, state);

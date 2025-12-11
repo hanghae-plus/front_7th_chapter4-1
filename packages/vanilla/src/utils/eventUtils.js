@@ -29,20 +29,11 @@ const handleGlobalEvents = (e) => {
 /**
  * 전역 이벤트 리스너 등록 (한 번만 실행)
  */
-export const registerGlobalEvents = (() => {
-  let initialized = false;
-  return () => {
-    if (initialized) {
-      return;
-    }
-
-    Object.keys(eventHandlers).forEach((eventType) => {
-      document.body.addEventListener(eventType, handleGlobalEvents);
-    });
-
-    initialized = true;
-  };
-})();
+export const registerGlobalEvents = () => {
+  Object.keys(eventHandlers).forEach((eventType) => {
+    document.body.addEventListener(eventType, handleGlobalEvents);
+  });
+};
 
 /**
  * 이벤트 위임을 통한 이벤트 핸들러 추가

@@ -1,9 +1,7 @@
-import { registerGlobalEvents } from "./utils";
 import { initRender } from "./render";
-import { registerAllEvents } from "./events";
-import { loadCartFromStorage } from "./services";
-import { router } from "./router";
-import { BASE_URL } from "./constants.js";
+import { createRouter, initRoutes } from "./router";
+import { createStores, getInitStates } from "./stores";
+import { BASE_URL } from "./constants";
 
 const enableMocking = () =>
   import("./mocks/browser.js").then(({ worker }) =>
@@ -15,16 +13,13 @@ const enableMocking = () =>
     }),
   );
 
+const router = createRouter();
+router.query = { current: undefined };
+const stores = createStores(getInitStates(window.__INITIAL_DATA__));
+initRoutes(router);
+
 function main() {
-  registerAllEvents();
-  registerGlobalEvents();
-  loadCartFromStorage();
-  initRender();
-  router.start();
+  initRender({ router, stores });
 }
 
-if (import.meta.env.MODE !== "test") {
-  enableMocking().then(main);
-} else {
-  main();
-}
+enableMocking().then(main);

@@ -1,7 +1,9 @@
-import { cartStore, uiStore } from "../stores";
 import { CartModal, Footer, Toast } from "../components";
+import { StoreContext } from "../contexts";
 
 export const PageWrapper = ({ headerLeft, children }) => {
+  const { cartStore, uiStore } = StoreContext.use();
+
   const cart = cartStore.getState();
   const { cartModal, toast } = uiStore.getState();
   const cartSize = cart.items.length;

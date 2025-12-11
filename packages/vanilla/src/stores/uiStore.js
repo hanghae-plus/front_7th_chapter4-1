@@ -59,7 +59,4 @@ const uiReducer = (state, action) => {
   }
 };
 
-/**
- * UI 스토어 생성
- */
-export const uiStore = createStore(uiReducer, initialState);
+export const createUiStore = (state = initialState) => createStore(uiReducer, state);

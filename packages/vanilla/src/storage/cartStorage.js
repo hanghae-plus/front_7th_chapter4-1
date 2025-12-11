@@ -1,3 +1,12 @@
 import { createStorage } from "../lib";
+import { isClient } from "../utils";
 
-export const cartStorage = createStorage("shopping_cart");
+const currentStorage = isClient()
+  ? window.localStorage
+  : {
+      getItem: () => null,
+      setItem: () => {},
+      removeItem: () => {},
+    };
+
+export const cartStorage = createStorage("shopping_cart", currentStorage);

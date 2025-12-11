@@ -1,10 +1,11 @@
-import { removeFromCart, toggleCartSelect, updateCartQuantity } from "../cartUseCase";
 import { PublicImage } from "../../../components";
 import type { Cart } from "../types";
 import { useCartStoreSelector } from "../hooks";
 import { useMemo } from "react";
+import { useCartUseCase } from "../useCartUseCase";
 
 export function CartItem({ id }: Readonly<Pick<Cart, "id">>) {
+  const { updateCartQuantity, toggleCartSelect, removeFromCart } = useCartUseCase();
   const selector = useMemo(
     () =>
       ({ items }: { items: Cart[] }) =>

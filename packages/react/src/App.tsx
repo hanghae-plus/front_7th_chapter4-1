@@ -1,12 +1,6 @@
-import { router, useCurrentPage } from "./router";
-import { HomePage, NotFoundPage, ProductDetailPage } from "./pages";
+import { useCurrentPage } from "./router";
 import { useLoadCartStore } from "./entities";
 import { ModalProvider, ToastProvider } from "./components";
-
-// 홈 페이지 (상품 목록)
-router.addRoute("/", HomePage);
-router.addRoute("/product/:id/", ProductDetailPage);
-router.addRoute(".*", NotFoundPage);
 
 const CartInitializer = () => {
   useLoadCartStore();

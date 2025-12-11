@@ -1,4 +1,7 @@
 import { useStore } from "@hanghae-plus/lib";
-import { productStore } from "../productStore";
+import { useStoreContext } from "../../StoreProvider";
 
-export const useProductStore = () => useStore(productStore);
+export const useProductStore = () => {
+  const { productStore } = useStoreContext();
+  return useStore(productStore);
+};

@@ -1,6 +1,6 @@
-import { useEffect } from "react";
-import { loadNextProducts, loadProductsAndCategories, ProductList, SearchBar } from "../entities";
+import { ProductList, SearchBar, useLoadProducts } from "../entities";
 import { PageWrapper } from "./PageWrapper";
+import { withSSRPage } from "./lib";
 
 const headerLeft = (
   <h1 className="text-xl font-bold text-gray-900">
@@ -10,39 +10,35 @@ const headerLeft = (
   </h1>
 );
 
-// 무한 스크롤 이벤트 등록
-let scrollHandlerRegistered = false;
+export const HomePage = withSSRPage(
+  () => {
+    useLoadProducts();
 
-const registerScrollHandler = () => {
-  if (scrollHandlerRegistered) return;
+    return (
+      <PageWrapper headerLeft={headerLeft}>
+        {/* 검색 및 필터 */}
+        <SearchBar />
 
-  window.addEventListener("scroll", loadNextProducts);
-  scrollHandlerRegistered = true;
-};
+        {/* 상품 목록 */}
+        <div className="mb-6">
+          <ProductList />
+        </div>
+      </PageWrapper>
+    );
+  },
+  {
+    async getServerProps(router) {
+      const { productService } = await import("../mocks/server");
+      const {
+        products,
+        pagination: { total: totalCount },
+      } = await productService.getProducts(router.query);
 
-const unregisterScrollHandler = () => {
-  if (!scrollHandlerRegistered) return;
-  window.removeEventListener("scroll", loadNextProducts);
-  scrollHandlerRegistered = false;
-};
+      const categories = await productService.getCategories();
 
-export const HomePage = () => {
-  useEffect(() => {
-    registerScrollHandler();
-    loadProductsAndCategories();
+      const head = "<title>쇼핑몰 - 홈</title>";
 
-    return unregisterScrollHandler;
-  }, []);
-
-  return (
-    <PageWrapper headerLeft={headerLeft}>
-      {/* 검색 및 필터 */}
-      <SearchBar />
-
-      {/* 상품 목록 */}
-      <div className="mb-6">
-        <ProductList />
-      </div>
-    </PageWrapper>
-  );
-};
+      return { products, categories, totalCount, head };
+    },
+  },
+);

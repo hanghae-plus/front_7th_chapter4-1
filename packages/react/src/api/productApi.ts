@@ -1,6 +1,6 @@
 // 상품 목록 조회
 import type { Categories, Product } from "../entities";
-import type { StringRecord } from "../types.ts";
+import type { StringRecord } from "../types";
 
 interface ProductsResponse {
   products: Product[];

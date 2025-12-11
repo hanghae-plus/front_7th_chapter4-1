@@ -4,8 +4,9 @@
  * @param {Storage} storage - 기본값은 localStorage
  * @returns {Object} { get, set, reset }
  */
-export const createStorage = (key, storage = window.localStorage) => {
+export const createStorage = (key, storage = typeof window !== "undefined" ? window.localStorage : null) => {
   const get = () => {
+    if (!storage) return null;
     try {
       const item = storage.getItem(key);
       return item ? JSON.parse(item) : null;
@@ -16,6 +17,7 @@ export const createStorage = (key, storage = window.localStorage) => {
   };
 
   const set = (value) => {
+    if (!storage) return;
     try {
       storage.setItem(key, JSON.stringify(value));
     } catch (error) {
@@ -24,6 +26,7 @@ export const createStorage = (key, storage = window.localStorage) => {
   };
 
   const reset = () => {
+    if (!storage) return;
     try {
       storage.removeItem(key);
     } catch (error) {

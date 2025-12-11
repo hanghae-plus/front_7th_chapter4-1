@@ -1,7 +1,9 @@
 import { App } from "./App";
-import { router } from "./router";
-import { BASE_URL } from "./constants.ts";
-import { createRoot } from "react-dom/client";
+import { createRouter, initRoutes } from "./router";
+import { BASE_URL } from "./constants";
+import { createRoot, hydrateRoot } from "react-dom/client";
+import { Providers } from "./apps";
+import { createStores, getInitStates } from "./entities";
 
 const enableMocking = () =>
   import("./mocks/browser").then(({ worker }) =>
@@ -13,16 +15,28 @@ const enableMocking = () =>
     }),
   );
 
+const router = createRouter();
+const stores = createStores(getInitStates(window.__INITIAL_DATA__));
+initRoutes(router);
+router.start();
+router.query = { current: undefined };
+
 function main() {
-  router.start();
-
   const rootElement = document.getElementById("root")!;
-  createRoot(rootElement).render(<App />);
+
+  const app = (
+    <Providers {...stores} router={router}>
+      <App />
+    </Providers>
+  );
+
+  if (rootElement.innerHTML.trim() !== "<!--app-html-->") {
+    // 서버 렌더링된 HTML에 이벤트 리스너 등을 연결
+    hydrateRoot(rootElement, app);
+  } else {
+    // 클라이언트에서 처음부터 렌더링
+    createRoot(rootElement).render(app);
+  }
 }
 
-// 애플리케이션 시작
-if (import.meta.env.MODE !== "test") {
-  enableMocking().then(main);
-} else {
-  main();
-}
+enableMocking().then(main);

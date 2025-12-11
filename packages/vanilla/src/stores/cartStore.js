@@ -1,6 +1,6 @@
 import { createStore } from "../lib";
 import { CART_ACTIONS } from "./actionTypes";
-import { cartStorage } from "../storage/index.js";
+import { cartStorage } from "../storage";
 
 /**
  * 장바구니 스토어 초기 상태
@@ -154,7 +154,5 @@ const cartReducer = (_, action) => {
       return state;
   }
 };
-/**
- * 장바구니 스토어 생성
- */
-export const cartStore = createStore(cartReducer, initialState);
+
+export const createCartStore = (state = initialState) => createStore(cartReducer, state);

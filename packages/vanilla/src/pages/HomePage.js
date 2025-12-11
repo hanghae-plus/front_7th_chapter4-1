@@ -1,26 +1,57 @@
 import { ProductList, SearchBar } from "../components";
-import { productStore } from "../stores";
-import { router, withLifecycle } from "../router";
-import { loadProducts, loadProductsAndCategories } from "../services";
-import { PageWrapper } from "./PageWrapper.js";
+import { useProductService } from "../services";
+import { PageWrapper } from "./PageWrapper";
+import { withLifecycle } from "../lib";
+import { RouterContext, StoreContext } from "../contexts";
+
+const getProductState = () => StoreContext.use().productStore.getState();
+const getQuery = () => RouterContext.use().query;
 
 export const HomePage = withLifecycle(
   {
+    async getServerProps({ router }) {
+      const { productService } = await import("../mocks/server");
+      const {
+        products,
+        pagination: { total: totalCount },
+      } = await productService.getProducts(router.query);
+
+      const categories = await productService.getCategories();
+
+      const head = "<title>쇼핑몰 - 홈</title>";
+
+      return { products, categories, totalCount, head };
+    },
     onMount: () => {
-      loadProductsAndCategories();
+      // 서버에서 하이드레이션된 데이터가 있으면 로딩하지 않음
+      const productService = useProductService();
+      const currentState = getProductState();
+      document.title = "쇼핑몰 - 홈";
+
+      if (currentState.products.length === 0 || currentState.status !== "done") {
+        productService.loadProductsAndCategories();
+      }
     },
     watches: [
       () => {
-        const { search, limit, sort, category1, category2 } = router.query;
+        const { search, limit, sort, category1, category2 } = getQuery();
         return [search, limit, sort, category1, category2];
       },
-      () => loadProducts(true),
+      () => useProductService().loadProducts(true),
     ],
   },
   () => {
-    const productState = productStore.getState();
-    const { search: searchQuery, limit, sort, category1, category2 } = router.query;
-    const { products, loading, error, totalCount, categories } = productState;
+    const productState = getProductState();
+
+    const {
+      search: searchQuery = "",
+      limit = "20",
+      sort = "recent",
+      category1 = "",
+      category2 = "",
+    } = getQuery() || {};
+
+    const { products = [], loading = false, error = null, totalCount = 0, categories = [] } = productState;
     const category = { category1, category2 };
     const hasMore = products.length < totalCount;
 

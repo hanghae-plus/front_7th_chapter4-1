@@ -1,3 +1,5 @@
+import { isServer } from "../utils";
+
 const lifeCycles = new WeakMap();
 const pageState = { current: null, previous: null };
 const initLifecycle = { mount: null, unmount: null, watches: [], deps: [], mounted: false };
@@ -48,8 +50,8 @@ const unmount = (pageFunction) => {
   lifecycle.mounted = false;
 };
 
-export const withLifecycle = ({ onMount, onUnmount, watches } = {}, page) => {
-  const lifecycle = getPageLifecycle(page);
+export const withLifecycle = ({ getServerProps, onMount, onUnmount, watches } = {}, OriginPage) => {
+  const lifecycle = getPageLifecycle(OriginPage);
   if (typeof onMount === "function") {
     lifecycle.mount = onMount;
   }
@@ -62,8 +64,13 @@ export const withLifecycle = ({ onMount, onUnmount, watches } = {}, page) => {
     lifecycle.watches = typeof watches[0] === "function" ? [watches] : watches;
   }
 
-  return (...args) => {
-    const wasNewPage = pageState.current !== page;
+  function Page(props) {
+    // SSR 환경에서는 라이프사이클 로직 생략하고 페이지만 렌더링
+    if (isServer()) {
+      return OriginPage(props);
+    }
+
+    const wasNewPage = pageState.current !== OriginPage;
 
     // 이전 페이지 언마운트
     if (pageState.current && wasNewPage) {
@@ -72,11 +79,11 @@ export const withLifecycle = ({ onMount, onUnmount, watches } = {}, page) => {
 
     // 현재 페이지 설정
     pageState.previous = pageState.current;
-    pageState.current = page;
+    pageState.current = OriginPage;
 
     // 새 페이지면 마운트, 기존 페이지면 업데이트
     if (wasNewPage) {
-      mount(page);
+      mount(OriginPage);
     } else if (lifecycle.watches) {
       lifecycle.watches.forEach(([getDeps, callback], index) => {
         const newDeps = getDeps();
@@ -91,6 +98,10 @@ export const withLifecycle = ({ onMount, onUnmount, watches } = {}, page) => {
     }
 
     // 페이지 함수 실행
-    return page(...args);
-  };
+    return OriginPage(props);
+  }
+
+  Object.assign(Page, { getServerProps });
+
+  return Page;
 };
