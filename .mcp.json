@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@executeautomation/playwright-mcp-server"]
+    },
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@latest"]
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    },
+    "storybook": {
+      "command": "npx",
+      "args": ["-y", "@storybook/mcp@latest"],
+      "env": {
+        "STORYBOOK_URL": "http://localhost:6006"
+      }
+    }
+  }
+}
