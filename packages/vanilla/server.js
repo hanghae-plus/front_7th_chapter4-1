@@ -6,8 +6,26 @@ const base = process.env.BASE || (prod ? "/front_7th_chapter4-1/vanilla/" : "/")
 
 const app = express();
 
+// add middleware
+let vite;
+
+if (!prod) {
+  const { createServer } = await import("vite");
+  vite = await createServer({
+    server: { middlewareMode: true },
+    appType: "custom",
+  });
+
+  app.use(vite.middlewares);
+} else {
+  const compression = (await import("compression")).default;
+  const sirv = (await import("sirv")).default;
+  app.use(compression());
+  app.use(base, sirv("../../dist/vanilla"), { extensions: [] });
+}
+
 const render = () => {
-  return `<div>안녕하세요</div>`;
+  return `<div>안녕하세요?</div>`;
 };
 
 app.get("*all", (req, res) => {
