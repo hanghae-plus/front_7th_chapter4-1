@@ -23,6 +23,19 @@ export const initialProductState = {
 };
 
 /**
+ * SSR 컨텍스트
+ *
+ * SSR에서 요청별로 격리된 스토어를 사용하기 위한 컨텍스트입니다.
+ * - SSR: ssrContext.store에 요청별 스토어 설정
+ * - CSR: ssrContext.store가 null이므로 싱글톤 productStore 사용
+ *
+ * 이를 통해 동시 요청 간 상태 오염을 방지합니다.
+ */
+export const ssrContext = {
+  store: null,
+};
+
+/**
  * 상품 스토어 리듀서
  */
 const productReducer = (state, action) => {
@@ -101,6 +114,31 @@ const productReducer = (state, action) => {
 };
 
 /**
- * 상품 스토어 생성
+ * 상품 스토어 리듀서 (SSR에서 새 스토어 생성 시 사용)
+ */
+export { productReducer };
+
+/**
+ * 새 상품 스토어 인스턴스 생성
+ * SSR에서 요청별 격리된 스토어가 필요할 때 사용
+ */
+export function createProductStore() {
+  return createStore(productReducer, initialProductState);
+}
+
+/**
+ * 클라이언트용 싱글톤 스토어
+ * CSR에서 전역적으로 사용되는 스토어
  */
 export const productStore = createStore(productReducer, initialProductState);
+
+/**
+ * 현재 활성 스토어 반환
+ *
+ * SSR/CSR 환경에 따라 적절한 스토어를 반환합니다:
+ * - SSR: ssrContext.store (요청별 격리된 스토어)
+ * - CSR: productStore (싱글톤 스토어)
+ */
+export function getActiveStore() {
+  return ssrContext.store || productStore;
+}
