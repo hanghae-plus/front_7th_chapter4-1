@@ -63,7 +63,8 @@ export class ServerRouter {
         })
         .replace(/\//g, "\\/");
 
-      regex = new RegExp(`^${this.#baseUrl}${regexPath}$`);
+      // ServerRouter는 이미 base path가 제거된 URL을 받으므로 baseUrl을 포함하지 않음
+      regex = new RegExp(`^${regexPath}$`);
     }
 
     this.#routes.set(path, {
