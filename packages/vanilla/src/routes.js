@@ -26,7 +26,7 @@ export const routes = [
     getServerSideProps: getServerSidePropsProductDetailPage,
     serverSideRender: serverSideRenderProductDetailPage,
     meta: {
-      title: (data) => `쇼핑몰 - ${data.currentProduct?.title || "상품 상세"}`,
+      title: (data) => `${data.currentProduct?.title || "상품 상세"} - 쇼핑몰`,
     },
   },
   {
