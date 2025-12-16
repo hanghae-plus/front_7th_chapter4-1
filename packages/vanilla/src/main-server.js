@@ -1,4 +1,4 @@
-import { ServerRouter } from "./lib/ServerRouter.js";
+import { router } from "./router/router.js";
 import { HomePage, ProductDetailPage, NotFoundPage } from "./pages/index.js";
 import { productStore } from "./stores/productStore.js";
 import { cartStore } from "./stores/cartStore.js";
@@ -100,14 +100,13 @@ const serverFetch = {
  * @returns {Promise<{html: string, state: Object}>}
  */
 export const render = async (url, query = {}) => {
-  // 1. 서버용 Router 생성
-  const router = new ServerRouter("");
+  // 1. 라우트 등록 (전역 router 사용)
   router.addRoute("/", HomePage);
   router.addRoute("/product/:id/", ProductDetailPage);
   router.addRoute(".*", NotFoundPage);
 
-  // 2. URL 매칭
-  const route = router.match(url);
+  // 2. URL 매칭 (query도 함께 전달)
+  const route = router.match(url, query);
 
   if (!route) {
     // 매칭되는 라우트가 없으면 NotFound

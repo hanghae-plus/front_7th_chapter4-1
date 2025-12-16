@@ -5,15 +5,41 @@
 export class ServerRouter {
   #routes;
   #baseUrl;
+  #currentRoute;
+  #currentQuery;
 
   constructor(baseUrl = "") {
     this.#routes = new Map();
     this.#baseUrl = baseUrl.replace(/\/$/, "");
+    this.#currentRoute = null;
+    this.#currentQuery = {};
   }
 
   get baseUrl() {
     return this.#baseUrl;
   }
+
+  get query() {
+    return this.#currentQuery;
+  }
+
+  get params() {
+    return this.#currentRoute?.params ?? {};
+  }
+
+  get route() {
+    return this.#currentRoute;
+  }
+
+  get target() {
+    return this.#currentRoute?.handler;
+  }
+
+  // 클라이언트 API 호환용 (서버에서는 아무것도 안함)
+  subscribe() {}
+  push() {}
+  start() {}
+  hydrate() {}
 
   /**
    * 라우트 등록
@@ -42,11 +68,15 @@ export class ServerRouter {
   /**
    * URL 매칭 (서버용)
    * @param {string} url - 매칭할 URL
+   * @param {Object} query - 쿼리 파라미터
    * @returns {Object|null} 매칭된 라우트 정보
    */
-  match(url) {
+  match(url, query = {}) {
     // URL 객체 생성 (origin은 임의로 설정, pathname만 필요)
     const pathname = new URL(url, "http://localhost").pathname;
+
+    // 현재 쿼리 설정
+    this.#currentQuery = query;
 
     for (const [routePath, route] of this.#routes) {
       const match = pathname.match(route.regex);
@@ -57,13 +87,18 @@ export class ServerRouter {
           params[name] = match[index + 1];
         });
 
-        return {
+        // 현재 라우트 설정
+        this.#currentRoute = {
           ...route,
           params,
           path: routePath,
         };
+
+        return this.#currentRoute;
       }
     }
+
+    this.#currentRoute = null;
     return null;
   }
 
