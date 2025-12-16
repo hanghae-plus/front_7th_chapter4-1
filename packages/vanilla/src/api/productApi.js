@@ -1,3 +1,11 @@
+import { isServer } from "../utils/environment.js";
+
+const withBaseUrl = (url) => {
+  // 서버 환경에서는 절대 경로를 사용해야하기 때문에 임시 baseURL 설정
+  // msw 핸들러에서 baseURL 상관 없이 처리함
+  return isServer() ? new URL(url, `http://localhost:${process.env.PORT || 5173}`) : url;
+};
+
 export async function getProducts(params = {}) {
   const { limit = 20, search = "", category1 = "", category2 = "", sort = "price_asc" } = params;
   const page = params.current ?? params.page ?? 1;
@@ -11,17 +19,29 @@ export async function getProducts(params = {}) {
     sort,
   });
 
-  const response = await fetch(`/api/products?${searchParams}`);
+  const response = await fetch(withBaseUrl(`/api/products?${searchParams}`), {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
 
   return await response.json();
 }
 
 export async function getProduct(productId) {
-  const response = await fetch(`/api/products/${productId}`);
+  const response = await fetch(withBaseUrl(`/api/products/${productId}`), {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
   return await response.json();
 }
 
 export async function getCategories() {
-  const response = await fetch("/api/categories");
+  const response = await fetch(withBaseUrl("/api/categories"), {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
   return await response.json();
 }

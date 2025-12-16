@@ -1,34 +1,59 @@
 import express from "express";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { createServer as createViteServer } from "vite";
+import { server } from "./src/mocks/server.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const prod = process.env.NODE_ENV === "production";
 const port = process.env.PORT || 5173;
 const base = process.env.BASE || (prod ? "/front_7th_chapter4-1/vanilla/" : "/");
 
-const app = express();
-
-const render = () => {
-  return `<div>안녕하세요</div>`;
-};
-
-app.get("*all", (req, res) => {
-  res.send(
-    `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vanilla Javascript SSR</title>
-</head>
-<body>
-<div id="app">${render()}</div>
-</body>
-</html>
-  `.trim(),
-  );
+server.listen({
+  onUnhandledRequest: "bypass",
 });
 
-// Start http server
-app.listen(port, () => {
-  console.log(`React Server started at http://localhost:${port}`);
-});
+async function bootstrapServer() {
+  const app = express();
+
+  const viteServer = await createViteServer({
+    base,
+    server: { middlewareMode: "ssr", hmr: true },
+    appType: "custom",
+  });
+
+  app.use(viteServer.middlewares);
+
+  app.use(express.static(path.join(process.cwd(), "public")));
+
+  app.get("*all", async (request, response, next) => {
+    try {
+      let template = fs.readFileSync(path.resolve(__dirname, "index.html"), "utf-8");
+
+      template = await viteServer.transformIndexHtml(request.originalUrl, template);
+
+      const { render } = await viteServer.ssrLoadModule("/src/entry-server.js");
+
+      const { head, body, initialScript } = await render(request.originalUrl, request.query);
+
+      const html = template
+        .replace("<!--app-head-->", head)
+        .replace("<!--app-html-->", body)
+        .replace("</head>", `${initialScript}</head>`);
+
+      response.status(200).set({ "Content-Type": "text/html" }).end(html);
+    } catch (error) {
+      viteServer.ssrFixStacktrace(error);
+      next(error);
+    }
+  });
+
+  // Start http server
+  app.listen(port, () => {
+    console.log(`React Server started at http://localhost:${port}`);
+  });
+}
+
+bootstrapServer();
