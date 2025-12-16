@@ -1,7 +1,7 @@
-import { ProductList, SearchBar } from "../components";
-import { productStore } from "../stores";
-import { router, withLifecycle } from "../router";
-import { loadProducts, loadProductsAndCategories } from "../services";
+import { ProductList, SearchBar } from "../components/index.js";
+import { productStore } from "../stores/index.js";
+import { router, withLifecycle } from "../router/index.js";
+import { loadProducts, loadProductsAndCategories } from "../services/index.js";
 import { PageWrapper } from "./PageWrapper.js";
 
 export const HomePage = withLifecycle(

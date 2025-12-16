@@ -1,10 +1,14 @@
-import { cartStore, uiStore } from "../stores";
-import { CartModal, Footer, Toast } from "../components";
+import { cartStore, uiStore } from "../stores/index.js";
+import { CartModal, Footer, Toast } from "../components/index.js";
 
 export const PageWrapper = ({ headerLeft, children }) => {
-  const cart = cartStore.getState();
-  const { cartModal, toast } = uiStore.getState();
-  const cartSize = cart.items.length;
+  const cart = cartStore.getState() || { items: [], selectedAll: false };
+  const uiState = uiStore.getState() || {
+    cartModal: { isOpen: false },
+    toast: { isVisible: false, message: "", type: "info" },
+  };
+  const { cartModal, toast } = uiState;
+  const cartSize = cart.items?.length || 0;
 
   const cartCount = `
     <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
@@ -36,7 +40,7 @@ export const PageWrapper = ({ headerLeft, children }) => {
         ${children}
       </main>
       
-      ${CartModal({ ...cart, isOpen: cartModal.isOpen })}
+      ${CartModal({ items: cart?.items || [], selectedAll: cart?.selectedAll || false, isOpen: cartModal?.isOpen || false })}
       
       ${Toast(toast)}
       

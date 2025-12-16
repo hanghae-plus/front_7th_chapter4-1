@@ -1,5 +1,5 @@
-import { createStore } from "../lib";
-import { CART_ACTIONS } from "./actionTypes";
+import { createStore } from "../lib/index.js";
+import { CART_ACTIONS } from "./actionTypes.js";
 import { cartStorage } from "../storage/index.js";
 
 /**
