@@ -27,6 +27,7 @@ if (!prod) {
 app.use("*all", async (req, res) => {
   try {
     const url = req.originalUrl.replace(base, "");
+    const origin = `${req.protocol}://${req.get("host")}`;
 
     /** @type {string} */
     let template;
@@ -41,7 +42,7 @@ app.use("*all", async (req, res) => {
       render = (await import("./dist/vanilla-ssr/main-server.js")).render;
     }
 
-    const rendered = await render(url);
+    const rendered = await render(url, origin);
 
     const html = template
       .replace(`<!--app-head-->`, rendered.head ?? "")
