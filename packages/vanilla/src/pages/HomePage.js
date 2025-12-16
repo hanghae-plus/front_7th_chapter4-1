@@ -52,7 +52,9 @@ export const serverSideRender = (initialData) => {
 export const HomePage = withLifecycle(
   {
     onMount: () => {
-      if (productStore.getState().status === "idle") {
+      const state = productStore.getState();
+      // Load if status is idle OR if we don't have products (navigating back from detail page)
+      if (state.status === "idle" || state.products.length === 0) {
         loadProductsAndCategories();
       }
     },
