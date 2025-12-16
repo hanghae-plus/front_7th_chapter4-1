@@ -21,7 +21,7 @@ async function generateStaticSite() {
     .replace("<!--app-html-->", homeHtml)
     .replace(
       "<!--app-head-->",
-      `<script>window.__INITIAL_STATE__ = ${JSON.stringify(homeState).replace(/</g, "\\u003c")}</script>`,
+      `<script>window.__INITIAL_DATA__ = ${JSON.stringify(homeState).replace(/</g, "\\u003c")}</script>`,
     );
   fs.writeFileSync("../../dist/vanilla/index.html", homeResult);
   console.log("✅ Homepage generated");
@@ -47,7 +47,7 @@ async function generateStaticSite() {
         .replace("<!--app-html-->", productHtml)
         .replace(
           "<!--app-head-->",
-          `<script>window.__INITIAL_STATE__ = ${JSON.stringify(productState).replace(/</g, "\\u003c")}</script>`,
+          `<script>window.__INITIAL_DATA__ = ${JSON.stringify(productState).replace(/</g, "\\u003c")}</script>`,
         );
 
       // /product/123/ 폴더 생성 및 index.html 저장

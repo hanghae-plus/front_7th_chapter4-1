@@ -18,21 +18,21 @@ const enableMocking = () =>
 
 function main() {
   // Hydration: 서버 렌더링 HTML이 있으면
-  if (window.__INITIAL_STATE__) {
+  if (window.__INITIAL_DATA__) {
     console.log("Hydrating from server state");
 
     // 1. Store 상태 복원
-    if (window.__INITIAL_STATE__.product) {
+    if (window.__INITIAL_DATA__.product) {
       productStore.dispatch({
         type: "SETUP",
-        payload: window.__INITIAL_STATE__.product,
+        payload: window.__INITIAL_DATA__.product,
       });
     }
 
-    if (window.__INITIAL_STATE__.cart) {
+    if (window.__INITIAL_DATA__.cart) {
       cartStore.dispatch({
         type: "LOAD_FROM_STORAGE",
-        payload: window.__INITIAL_STATE__.cart,
+        payload: window.__INITIAL_DATA__.cart,
       });
     }
 

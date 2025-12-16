@@ -70,7 +70,7 @@ app.get(/.*/, async (req, res) => {
     // 초기 상태를 스크립트로 주입 (XSS 방지)
     const stateScript = `
       <script>
-        window.__INITIAL_STATE__ = ${JSON.stringify(state).replace(/</g, "\\u003c")}
+        window.__INITIAL_DATA__ = ${JSON.stringify(state).replace(/</g, "\\u003c")}
       </script>
     `;
 
