@@ -65,7 +65,7 @@ app.get(/.*/, async (req, res) => {
     }
 
     // 앱 렌더링
-    const { html: appHtml, state } = await render(url, req.query);
+    const { html: appHtml, state, meta } = await render(url, req.query);
 
     // 초기 상태를 스크립트로 주입 (XSS 방지)
     const stateScript = `
@@ -75,7 +75,16 @@ app.get(/.*/, async (req, res) => {
     `;
 
     // HTML 조립
-    const html = template.replace("<!--app-html-->", appHtml).replace("<!--app-head-->", stateScript);
+    let html = template.replace("<!--app-html-->", appHtml).replace("<!--app-head-->", stateScript);
+
+    // 메타 태그 주입
+    if (meta) {
+      html = html.replace(/<title>.*?<\/title>/, `<title>${meta.title}</title>`);
+      html = html.replace(
+        /<meta name="description" content=".*?" \/>/,
+        `<meta name="description" content="${meta.description}" />`,
+      );
+    }
 
     // 응답
     res.status(200).set({ "Content-Type": "text/html" }).end(html);

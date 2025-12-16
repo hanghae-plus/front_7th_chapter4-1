@@ -16,13 +16,23 @@ async function generateStaticSite() {
 
   // 3. 홈 페이지 생성
   console.log("📄 Generating homepage...");
-  const { html: homeHtml, state: homeState } = await render("/", {});
-  const homeResult = template
+  const { html: homeHtml, state: homeState, meta: homeMeta } = await render("/", {});
+  let homeResult = template
     .replace("<!--app-html-->", homeHtml)
     .replace(
       "<!--app-head-->",
       `<script>window.__INITIAL_DATA__ = ${JSON.stringify(homeState).replace(/</g, "\\u003c")}</script>`,
     );
+
+  // 메타 태그 주입
+  if (homeMeta) {
+    homeResult = homeResult.replace(/<title>.*?<\/title>/, `<title>${homeMeta.title}</title>`);
+    homeResult = homeResult.replace(
+      /<meta name="description" content=".*?" \/>/,
+      `<meta name="description" content="${homeMeta.description}" />`,
+    );
+  }
+
   fs.writeFileSync("../../dist/vanilla/index.html", homeResult);
   console.log("✅ Homepage generated");
 
@@ -41,14 +51,26 @@ async function generateStaticSite() {
 
   for (const product of mockProducts) {
     try {
-      const { html: productHtml, state: productState } = await render(`/product/${product.productId}/`, {});
+      const { html: productHtml, state: productState, meta: productMeta } = await render(
+        `/product/${product.productId}/`,
+        {},
+      );
 
-      const productResult = template
+      let productResult = template
         .replace("<!--app-html-->", productHtml)
         .replace(
           "<!--app-head-->",
           `<script>window.__INITIAL_DATA__ = ${JSON.stringify(productState).replace(/</g, "\\u003c")}</script>`,
         );
+
+      // 메타 태그 주입
+      if (productMeta) {
+        productResult = productResult.replace(/<title>.*?<\/title>/, `<title>${productMeta.title}</title>`);
+        productResult = productResult.replace(
+          /<meta name="description" content=".*?" \/>/,
+          `<meta name="description" content="${productMeta.description}" />`,
+        );
+      }
 
       // /product/123/ 폴더 생성 및 index.html 저장
       const dir = path.join(productDir, product.productId);

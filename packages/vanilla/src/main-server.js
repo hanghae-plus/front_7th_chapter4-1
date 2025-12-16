@@ -172,7 +172,23 @@ export const render = async (url, query = {}) => {
   const PageComponent = route.handler;
   const html = PageComponent();
 
-  // 5. 현재 상태 반환
+  // 5. 메타 정보 생성
+  let meta = {
+    title: "쇼핑몰",
+    description: "항해플러스 프론트엔드 쇼핑몰",
+  };
+
+  if (route.path === "/product/:id/") {
+    const product = productStore.getState().currentProduct;
+    if (product) {
+      meta = {
+        title: `${product.title} - 쇼핑몰`,
+        description: product.title,
+      };
+    }
+  }
+
+  // 6. 현재 상태 반환
   return {
     html,
     state: {
@@ -180,5 +196,6 @@ export const render = async (url, query = {}) => {
       cart: cartStore.getState(),
       route: { url, query, params: route.params },
     },
+    meta,
   };
 };
