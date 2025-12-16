@@ -25,18 +25,28 @@ if (!prod) {
 
   app.use(vite.middlewares);
 } else {
-  // 프로덕션 환경: 빌드된 정적 파일 서빙
-  // base 경로를 문자열로 처리하는 커스텀 middleware
-  const staticMiddleware = express.static(path.resolve(__dirname, "dist/vanilla"));
-  app.use((req, res, next) => {
-    // base 경로로 시작하는 요청만 정적 파일로 처리
-    if (req.url.startsWith(base)) {
-      // base 경로 제거하고 정적 파일 middleware로 전달
-      req.url = req.url.slice(base.length - 1); // '/front_7th.../vanilla/' -> '/'
-      staticMiddleware(req, res, next);
-    } else {
-      next();
+  // 프로덕션 환경: 정적 파일 미들웨어 생성
+  const staticMiddleware = express.static(path.resolve(__dirname, "../../dist/vanilla"), {
+    index: false, // 자동 index.html 반환 비활성화
+    fallthrough: true,
+  });
+
+  // 조건부 정적 파일 서빙
+  app.use(base, (req, res, next) => {
+    const normalizedPath = req.path.replace(new RegExp(`^${base}`), "/");
+
+    // 루트 경로에 쿼리 파라미터가 있으면 SSR로 넘김
+    if (normalizedPath === "/" && Object.keys(req.query).length > 0) {
+      return next();
     }
+
+    // 루트 경로이고 쿼리가 없으면 index.html 반환
+    if (normalizedPath === "/") {
+      return res.sendFile(path.resolve(__dirname, "../../dist/vanilla/index.html"));
+    }
+
+    // 그 외의 경우는 정적 파일 서빙
+    staticMiddleware(req, res, next);
   });
 }
 
@@ -45,12 +55,16 @@ app.get(/.*/, async (req, res) => {
   try {
     const url = req.originalUrl.replace(base, "");
 
+    // req.query는 [Object: null prototype]이므로 일반 객체로 변환
+    const query = { ...req.query };
+
     let template;
     let render;
 
     if (prod) {
       // === 프로덕션 ===
-      template = fs.readFileSync(path.resolve(__dirname, "dist/vanilla/index.html"), "utf-8");
+      // SSR용 템플릿 (플레이스홀더 보존된 파일)
+      template = fs.readFileSync(path.resolve(__dirname, "../../dist/vanilla/template.html"), "utf-8");
       render = (await import("./dist/vanilla-ssr/main-server.js")).render;
     } else {
       // === 개발 환경 ===
@@ -65,7 +79,7 @@ app.get(/.*/, async (req, res) => {
     }
 
     // 앱 렌더링
-    const { html: appHtml, state, meta } = await render(url, req.query);
+    const { html: appHtml, state, meta } = await render(url, query);
 
     // 초기 상태를 스크립트로 주입 (XSS 방지)
     const stateScript = `

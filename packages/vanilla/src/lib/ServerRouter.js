@@ -84,8 +84,8 @@ export class ServerRouter {
     // URL 객체 생성 (origin은 임의로 설정, pathname만 필요)
     const pathname = new URL(url, "http://localhost").pathname;
 
-    // 현재 쿼리 설정
-    this.#currentQuery = query;
+    // 쿼리를 명시적으로 복사하여 독립적인 객체로 설정 (SSR 환경에서 상태 격리 보장)
+    this.#currentQuery = { ...query };
 
     for (const [routePath, route] of this.#routes) {
       const match = pathname.match(route.regex);

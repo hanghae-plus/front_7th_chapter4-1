@@ -84,14 +84,23 @@ const serverFetch = {
       }
     });
 
-    // Set을 배열로 변환
+    // Set을 중첩 객체로 변환 (테스트 호환성)
     Object.keys(categories).forEach((key) => {
-      categories[key] = Array.from(categories[key]);
+      const categoryArray = Array.from(categories[key]);
+      categories[key] = categoryArray.reduce((acc, cat) => {
+        acc[cat] = {};
+        return acc;
+      }, {});
     });
 
     return categories;
   },
 };
+
+// 라우트 등록 (모듈 레벨에서 한 번만 실행)
+router.addRoute("/", HomePage);
+router.addRoute("/product/:id/", ProductDetailPage);
+router.addRoute(".*", NotFoundPage);
 
 /**
  * 서버 사이드 렌더링 함수
@@ -100,12 +109,26 @@ const serverFetch = {
  * @returns {Promise<{html: string, state: Object}>}
  */
 export const render = async (url, query = {}) => {
-  // 1. 라우트 등록 (전역 router 사용)
-  router.addRoute("/", HomePage);
-  router.addRoute("/product/:id/", ProductDetailPage);
-  router.addRoute(".*", NotFoundPage);
+  // 0. Store 초기화 (매 요청마다 깨끗한 상태로 시작)
+  productStore.dispatch({
+    type: PRODUCT_ACTIONS.SETUP,
+    payload: {
+      products: [],
+      totalCount: 0,
+      currentProduct: null,
+      relatedProducts: [],
+      loading: true,
+      error: null,
+      status: "idle",
+      categories: {},
+    },
+  });
+  cartStore.dispatch({
+    type: "RESET",
+    payload: { items: [] },
+  });
 
-  // 2. URL 매칭 (query도 함께 전달)
+  // 1. URL 매칭 (query도 함께 전달)
   const route = router.match(url, query);
 
   if (!route) {
@@ -189,11 +212,19 @@ export const render = async (url, query = {}) => {
   }
 
   // 6. 현재 상태 반환
+  const productState = productStore.getState();
+  const cartState = cartStore.getState();
+
   return {
     html,
     state: {
-      product: productStore.getState(),
-      cart: cartStore.getState(),
+      // 테스트 호환성을 위한 평면 구조
+      products: productState.products,
+      categories: productState.categories,
+      totalCount: productState.totalCount,
+      // 추가 데이터는 중첩 구조로 유지
+      product: productState,
+      cart: cartState,
       route: { url, query, params: route.params },
     },
     meta,

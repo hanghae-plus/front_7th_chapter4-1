@@ -11,10 +11,15 @@ async function generateStaticSite() {
   const templatePath = "../../dist/vanilla/index.html";
   const template = fs.readFileSync(templatePath, "utf-8");
 
+  // 1-1. SSR용 템플릿 복사 (플레이스홀더 보존)
+  const ssrTemplatePath = "../../dist/vanilla/template.html";
+  fs.writeFileSync(ssrTemplatePath, template);
+  console.log("✅ SSR template saved to template.html");
+
   // 2. 서버 렌더 함수 import (빌드된 파일)
   const { render } = await import("./dist/vanilla-ssr/main-server.js");
 
-  // 3. 홈 페이지 생성
+  // 3. 홈 페이지 생성 (쿼리 파라미터 없는 기본 상태)
   console.log("📄 Generating homepage...");
   const { html: homeHtml, state: homeState, meta: homeMeta } = await render("/", {});
   let homeResult = template
@@ -51,10 +56,11 @@ async function generateStaticSite() {
 
   for (const product of mockProducts) {
     try {
-      const { html: productHtml, state: productState, meta: productMeta } = await render(
-        `/product/${product.productId}/`,
-        {},
-      );
+      const {
+        html: productHtml,
+        state: productState,
+        meta: productMeta,
+      } = await render(`/product/${product.productId}/`, {});
 
       let productResult = template
         .replace("<!--app-html-->", productHtml)
