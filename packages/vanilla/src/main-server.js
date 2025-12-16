@@ -174,7 +174,7 @@ export const render = async (url, query = {}) => {
 
   // 5. 메타 정보 생성
   let meta = {
-    title: "쇼핑몰",
+    title: "쇼핑몰 - 홈",
     description: "항해플러스 프론트엔드 쇼핑몰",
   };
 
