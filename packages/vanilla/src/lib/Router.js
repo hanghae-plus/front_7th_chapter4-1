@@ -126,6 +126,15 @@ export class Router {
   }
 
   /**
+   * Hydration: 서버 렌더링된 HTML을 유지하면서 라우터 상태만 초기화
+   * 재렌더링을 트리거하지 않음
+   */
+  hydrate() {
+    this.#route = this.#findRoute();
+    // notify()를 호출하지 않아서 재렌더링이 발생하지 않음
+  }
+
+  /**
    * 쿼리 파라미터를 객체로 파싱
    * @param {string} search - location.search 또는 쿼리 문자열
    * @returns {Object} 파싱된 쿼리 객체
