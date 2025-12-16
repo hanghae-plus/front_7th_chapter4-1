@@ -13,16 +13,6 @@ const base = process.env.BASE || (prod ? "/front_7th_chapter4-1/vanilla/" : "/")
 
 const app = express();
 
-// 정적 파일 서빙 설정
-if (prod) {
-  // 프로덕션: 빌드된 파일 서빙
-  app.use(base, sirv(path.join(__dirname, "dist/vanilla"), { dev: false }));
-} else {
-  // 개발: 정적 파일 서빙 (src, public 폴더)
-  app.use("/src", sirv(path.join(__dirname, "src"), { dev: true }));
-  app.use("/public", sirv(path.join(__dirname, "public"), { dev: true }));
-}
-
 // HTML 템플릿 읽기
 const templatePath = path.join(__dirname, "index.html");
 const template = fs.readFileSync(templatePath, "utf-8");
@@ -41,8 +31,64 @@ async function initializeRender() {
   }
 }
 
-// 모든 라우트에 대해 SSR 처리
-app.get("*", async (req, res) => {
+// 정적 파일 서빙 설정 (SSR 미들웨어보다 먼저 등록)
+if (prod) {
+  // 프로덕션: 빌드된 파일 서빙
+  const distPath = path.join(__dirname, "dist/vanilla");
+  // 디렉토리가 존재하는 경우에만 정적 파일 서빙
+  if (fs.existsSync(distPath)) {
+    app.use(
+      base,
+      sirv(distPath, {
+        dev: false,
+        onNoMatch: (req, res, next) => next(), // 파일이 없으면 다음 미들웨어로
+      }),
+    );
+  } else {
+    console.warn(`⚠️  프로덕션 모드이지만 빌드 디렉토리가 없습니다: ${distPath}`);
+    console.warn("   개발 모드로 정적 파일을 서빙합니다.");
+    // 개발 모드로 폴백
+    app.use(
+      "/src",
+      sirv(path.join(__dirname, "src"), {
+        dev: true,
+        onNoMatch: (req, res, next) => next(),
+      }),
+    );
+    app.use(
+      "/public",
+      sirv(path.join(__dirname, "public"), {
+        dev: true,
+        onNoMatch: (req, res, next) => next(),
+      }),
+    );
+  }
+} else {
+  // 개발: 정적 파일 서빙 (src, public 폴더)
+  app.use(
+    "/src",
+    sirv(path.join(__dirname, "src"), {
+      dev: true,
+      onNoMatch: (req, res, next) => next(), // 파일이 없으면 다음 미들웨어로
+    }),
+  );
+  app.use(
+    "/public",
+    sirv(path.join(__dirname, "public"), {
+      dev: true,
+      onNoMatch: (req, res, next) => next(), // 파일이 없으면 다음 미들웨어로
+    }),
+  );
+}
+
+// 모든 라우트에 대해 SSR 처리 (Express 5.x 호환)
+// 정적 파일이 처리되지 않은 경우에만 SSR 실행
+app.use(async (req, res, next) => {
+  // 정적 파일 요청은 건너뛰기
+  if (req.path.startsWith("/src/") || req.path.startsWith("/public/") || req.path.startsWith("/api/")) {
+    return next();
+  }
+
   // render 함수가 아직 초기화되지 않았으면 초기화
   if (!render) {
     await initializeRender();
