@@ -109,7 +109,7 @@ export const render = async (url, query = {}) => {
   const route = router.match(url, query);
 
   if (!route) {
-    // 매칭되는 라우트가 없으면 NotFound
+    // 매칭되는 라우트가 없으면 NotFound (이 경우는 발생하지 않아야 함)
     const html = NotFoundPage();
     return {
       html,

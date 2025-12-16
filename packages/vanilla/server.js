@@ -26,11 +26,22 @@ if (!prod) {
   app.use(vite.middlewares);
 } else {
   // 프로덕션 환경: 빌드된 정적 파일 서빙
-  app.use(base, express.static(path.resolve(__dirname, "dist/vanilla")));
+  // base 경로를 문자열로 처리하는 커스텀 middleware
+  const staticMiddleware = express.static(path.resolve(__dirname, "dist/vanilla"));
+  app.use((req, res, next) => {
+    // base 경로로 시작하는 요청만 정적 파일로 처리
+    if (req.url.startsWith(base)) {
+      // base 경로 제거하고 정적 파일 middleware로 전달
+      req.url = req.url.slice(base.length - 1); // '/front_7th.../vanilla/' -> '/'
+      staticMiddleware(req, res, next);
+    } else {
+      next();
+    }
+  });
 }
 
-// SSR 핸들러
-app.get("*", async (req, res) => {
+// SSR 핸들러 (정규식 사용)
+app.get(/.*/, async (req, res) => {
   try {
     const url = req.originalUrl.replace(base, "");
 
