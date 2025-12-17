@@ -1,5 +1,5 @@
 import { HomePageView } from "./pages/HomePage.js";
-import { ProductDetailPage } from "./pages/ProductDetailPage.js";
+import { ProductDetailPageView } from "./pages/ProductDetailPage.js";
 import { NotFoundPage } from "./pages/NotFoundPage.js";
 import { ServerRouter } from "./lib/ServerRouter.js";
 import items from "./mocks/items.json";
@@ -139,7 +139,7 @@ export async function render(url) {
   serverRouter.query = query;
 
   serverRouter.addRoute("/", () => HomePageView({ store: productStore, query }));
-  serverRouter.addRoute("/product/:id/", (params) => ProductDetailPage({ store: productStore, params }));
+  serverRouter.addRoute("/product/:id/", (params) => ProductDetailPageView({ store: productStore, params }));
   serverRouter.addRoute(".*", () => NotFoundPage()); // 404 페이지는 와일드카드로 마지막에 등록
 
   // 4. 라우트 매칭
@@ -163,7 +163,7 @@ export async function render(url) {
     html = HomePageView({ store: productStore, query });
     head = "<title>메인 | 쇼핑몰</title>";
   } else if (route.path === "/product/:id/") {
-    html = ProductDetailPage({ store: productStore, params: route.params });
+    html = ProductDetailPageView({ store: productStore, params: route.params });
     head = `<title>상품 ${route.params.id} 상세 | 쇼핑몰</title>`;
   }
 
