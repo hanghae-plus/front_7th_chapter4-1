@@ -15,8 +15,8 @@
     "serve:test": "concurrently -n \"Vanilla,React\" -c \"bgMagenta,bgGreen\" \"pnpm -F @hanghae-plus/shopping-vanilla serve:test\" \"pnpm -F @hanghae-plus/shopping-react serve:test\"",
     "test:unit": "pnpm -F @hanghae-plus/lib test",
     "test:e2e": "playwright test",
-    "test:e2e:basic": "playwright test 'basic'",
-    "test:e2e:advanced": "playwright test 'advanced'",
+    "test:e2e:basic": "playwright test e2e/e2e-basic.spec.ts",
+    "test:e2e:advanced": "playwright test e2e/e2e-advanced.spec.ts",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:report": "npx playwright show-report",
     "prepare": "husky",
@@ -38,6 +38,7 @@
     "@types/node": "^24.0.13",
     "@vitest/coverage-v8": "latest",
     "@vitest/ui": "latest",
+    "concurrently": "latest",
     "eslint": "^9.16.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.2.1",
@@ -45,11 +46,11 @@
     "globals": "^15.13.0",
     "husky": "^9.1.7",
     "lint-staged": "^15.2.11",
+    "nodemon": "^3.1.11",
     "prettier": "^3.4.2",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.36.0",
     "vite": "npm:rolldown-vite@latest",
-    "vitest": "latest",
-    "concurrently": "latest"
+    "vitest": "latest"
   }
 }
