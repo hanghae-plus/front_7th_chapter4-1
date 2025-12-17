@@ -383,7 +383,7 @@
 
 ### 4.0 useStore Hook 수정 (CRITICAL - 먼저 해야 함!)
 
-- [ ] **4.0.1** `packages/lib/src/hooks/useStore.ts`에 `getServerSnapshot` 추가
+- [x] **4.0.1** `packages/lib/src/hooks/useStore.ts`에 `getServerSnapshot` 추가
   ```tsx
   export const useStore = <T, S = T>(
     store: Store<T>,
@@ -401,12 +401,14 @@
   ```
   - **Acceptance Criteria:** React 18 SSR에서 hydration 경고 없음
   - **Reference:** `SSR_SSG_IMPLEMENTATION_GUIDE.md` - State Management 섹션
-  - **Notes:**
+  - **Notes:** ✅ useSyncExternalStore에 세 번째 파라미터 getServerSnapshot 추가 완료
 
   **⚠️ WARNING:** 이 작업을 하지 않으면:
   - Hydration mismatch 에러 발생
   - 서버/클라이언트 렌더링 불일치
   - E2E 테스트 실패
+
+  **✅ COMPLETED - 이 CRITICAL 작업이 완료되어 안전하게 진행 가능합니다!**
 
 ### 4.1 main.tsx 업데이트
 
