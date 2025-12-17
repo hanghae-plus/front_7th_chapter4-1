@@ -2,6 +2,8 @@ import { productStore } from "../stores";
 import { loadProductDetailForPage } from "../services";
 import { router, withLifecycle } from "../router";
 import { PageWrapper } from "./PageWrapper.js";
+import { getProduct } from "../api/productApi.js";
+import { getRelatedProducts } from "../services/productService.js";
 
 const loadingContent = `
   <div class="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -241,8 +243,13 @@ export const ProductDetailPage = withLifecycle(
     },
     watches: [() => [router.params.id], () => loadProductDetailForPage(router.params.id)],
   },
-  () => {
-    const { currentProduct: product, relatedProducts = [], error, loading } = productStore.getState();
+  (serversideProps) => {
+    const {
+      currentProduct: product,
+      relatedProducts = [],
+      error,
+      loading,
+    } = serversideProps || productStore.getState();
 
     return PageWrapper({
       headerLeft: `
@@ -264,3 +271,11 @@ export const ProductDetailPage = withLifecycle(
     });
   },
 );
+
+ProductDetailPage.loader = async () => {
+  const [currentProduct, relatedProducts] = await Promise.all([
+    getProduct(router.params.id),
+    getRelatedProducts(router.params.category2, router.params.id),
+  ]);
+  return { currentProduct, relatedProducts };
+};

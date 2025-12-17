@@ -55,9 +55,9 @@ HomePage.loader = async () => {
   const [
     {
       products,
-      pagination: { totalPages },
+      pagination: { count },
     },
     categories,
   ] = await Promise.all([getProducts(router.query), getCategories()]);
-  return { products, totalPages, categories };
+  return { products, totalCount: count, categories };
 };

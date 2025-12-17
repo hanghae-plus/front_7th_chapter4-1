@@ -161,21 +161,23 @@ export const loadProductDetailForPage = async (productId) => {
   }
 };
 
+export const getRelatedProducts = async (category2, excludeProductId) => {
+  const params = {
+    category2,
+    limit: 20, // 관련 상품 20개
+    page: 1,
+  };
+  const response = await getProducts(params);
+  return response.products.filter((product) => product.productId !== excludeProductId);
+};
+
 /**
  * 관련 상품 로드 (같은 카테고리의 다른 상품들)
  */
 export const loadRelatedProducts = async (category2, excludeProductId) => {
   try {
-    const params = {
-      category2,
-      limit: 20, // 관련 상품 20개
-      page: 1,
-    };
-
-    const response = await getProducts(params);
-
     // 현재 상품 제외
-    const relatedProducts = response.products.filter((product) => product.productId !== excludeProductId);
+    const relatedProducts = await getRelatedProducts(category2, excludeProductId);
 
     productStore.dispatch({
       type: PRODUCT_ACTIONS.SET_RELATED_PRODUCTS,
