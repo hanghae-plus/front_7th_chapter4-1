@@ -5,6 +5,7 @@ import { fileURLToPath } from "url";
 import sirv from "sirv";
 import { filterProducts } from "./src/utils/productFilter.js";
 import { getUniqueCategories } from "./src/utils/categoryUtils.js";
+import { injectIntoTemplate } from "./src/utils/htmlUtils.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,23 +16,23 @@ const base = process.env.BASE || (prod ? "/front_7th_chapter4-1/vanilla/" : "/")
 
 const app = express();
 
-// HTML 템플릿 읽기 (프로덕션에서는 빌드된 템플릿 우선 사용)
-let templatePath;
-let template;
-if (prod) {
-  // 프로덕션: 빌드된 템플릿 우선, 없으면 원본 사용
-  const builtTemplatePath = path.join(__dirname, "dist/vanilla/index.html");
-  if (fs.existsSync(builtTemplatePath)) {
-    templatePath = builtTemplatePath;
-    template = fs.readFileSync(templatePath, "utf-8");
+// HTML 템플릿 읽기 함수 (매 요청마다 최신 템플릿 보장)
+function getTemplate() {
+  let templatePath;
+  if (prod) {
+    // 프로덕션: 빌드된 템플릿 우선, 없으면 원본 사용
+    const builtTemplatePath = path.join(__dirname, "dist/vanilla/index.html");
+    if (fs.existsSync(builtTemplatePath)) {
+      templatePath = builtTemplatePath;
+    } else {
+      templatePath = path.join(__dirname, "index.html");
+    }
   } else {
+    // 개발: 원본 템플릿 사용
     templatePath = path.join(__dirname, "index.html");
-    template = fs.readFileSync(templatePath, "utf-8");
   }
-} else {
-  // 개발: 원본 템플릿 사용
-  templatePath = path.join(__dirname, "index.html");
-  template = fs.readFileSync(templatePath, "utf-8");
+  // 매 요청마다 템플릿을 다시 읽어서 최신 상태 보장
+  return fs.readFileSync(templatePath, "utf-8");
 }
 
 // SSR 렌더링 함수 import (비동기 초기화)
@@ -255,18 +256,34 @@ const ssrMiddleware = async (req, res, next) => {
     // appHtml이 비어있으면 기본값 사용
     const finalAppHtml = appHtml && appHtml.trim().length > 0 ? appHtml : '<div id="root"></div>';
 
-    // HTML 템플릿에 삽입
-    const initialStateJson = JSON.stringify(initialState);
-    const initialStateScript = `<script>window.__INITIAL_DATA__ = ${initialStateJson};</script>`;
+    // 매 요청마다 최신 템플릿 읽기
+    const template = getTemplate();
 
-    // 템플릿 치환 (플레이스홀더가 있는지 확인 후 치환)
-    let html = template;
-    if (!html.includes("<!--app-html-->")) {
+    // 템플릿에 플레이스홀더가 있는지 확인
+    if (!template.includes("<!--app-html-->")) {
+      const templatePath = prod
+        ? fs.existsSync(path.join(__dirname, "dist/vanilla/index.html"))
+          ? path.join(__dirname, "dist/vanilla/index.html")
+          : path.join(__dirname, "index.html")
+        : path.join(__dirname, "index.html");
       throw new Error("템플릿에 <!--app-html--> 플레이스홀더가 없습니다. 템플릿 경로: " + templatePath);
     }
-    html = html.replace("<!--app-html-->", finalAppHtml);
-    html = html.replace("<!--app-head-->", initialStateScript);
-    html = html.replace("<!--app-title-->", title);
+
+    // injectIntoTemplate 유틸리티 함수 사용 (모든 플레이스홀더 치환 보장)
+    const html = injectIntoTemplate(template, {
+      html: finalAppHtml,
+      initialState,
+      title,
+    });
+
+    // 치환 검증: 플레이스홀더가 남아있으면 에러
+    if (html.includes("<!--app-html-->") || html.includes("<!--app-head-->") || html.includes("<!--app-title-->")) {
+      console.error("[SSR] 플레이스홀더 치환 실패!");
+      console.error("[SSR] - <!--app-html--> 남아있음:", html.includes("<!--app-html-->"));
+      console.error("[SSR] - <!--app-head--> 남아있음:", html.includes("<!--app-head-->"));
+      console.error("[SSR] - <!--app-title--> 남아있음:", html.includes("<!--app-title-->"));
+      throw new Error("플레이스홀더 치환이 완료되지 않았습니다.");
+    }
 
     // JavaScript가 비활성화된 환경에서도 load 이벤트가 발생하도록
     // Content-Type과 Content-Length 헤더를 명시적으로 설정하여
@@ -313,9 +330,26 @@ if (prod) {
   app.use(ssrMiddleware);
 }
 
-// 서버 시작 전에 render 함수 초기화
+// 서버 시작 전에 render 함수 초기화 및 items.json 로드
 // API는 app.use() 미들웨어에서 직접 처리하므로 별도 초기화가 필요 없습니다.
-initializeRender()
+async function initializeServer() {
+  // items.json 미리 로드 (main-server.js에서 사용)
+  if (!global.apiItems) {
+    try {
+      const { default: items } = await import("./src/mocks/items.json", { with: { type: "json" } });
+      global.apiItems = items;
+      console.log(`[Server] items.json 초기화 완료 (${items.length}개 항목)`);
+    } catch (error) {
+      console.error("[Server] items.json 초기화 실패:", error);
+      throw error;
+    }
+  }
+
+  // render 함수 초기화
+  await initializeRender();
+}
+
+initializeServer()
   .then(() => {
     // Start http server
     app.listen(port, () => {

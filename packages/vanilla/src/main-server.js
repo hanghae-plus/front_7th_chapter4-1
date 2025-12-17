@@ -219,11 +219,10 @@ export const render = async (url, query = {}) => {
     // 중요: 모든 비동기 작업이 완료될 때까지 await하여 데이터가 완전히 로드되도록 보장
     if (route.handler === "HomePage") {
       // 홈페이지: 상품 목록과 카테고리 로드
-      // SSR에서는 MSW 대신 items.json을 직접 로드하여 서버 API 미들웨어와 동일한 로직 사용
+      // SSR에서는 global.apiItems 사용 (server.js에서 미리 로드됨)
       try {
-        // items.json 직접 로드 (서버 API 미들웨어와 동일한 방식)
-        const itemsModule = await import("./mocks/items.json", { with: { type: "json" } });
-        const items = itemsModule.default;
+        // global.apiItems 사용 (server.js에서 미리 로드됨)
+        const items = global.apiItems;
 
         // 데이터가 로드되었는지 확인
         if (!items || !Array.isArray(items) || items.length === 0) {
@@ -258,12 +257,15 @@ export const render = async (url, query = {}) => {
       }
     } else if (route.handler === "ProductDetailPage") {
       // 상품 상세 페이지: 상품 상세 정보 로드
-      // SSR에서는 MSW 대신 items.json을 직접 로드하여 서버 API 미들웨어와 동일한 로직 사용
+      // SSR에서는 global.apiItems 사용 (server.js에서 미리 로드됨)
       const productId = route.params.id;
 
       try {
-        // items.json 직접 로드 (서버 API 미들웨어와 동일한 방식)
-        const { default: items } = await import("./mocks/items.json", { with: { type: "json" } });
+        // global.apiItems 사용 (server.js에서 미리 로드됨)
+        const items = global.apiItems;
+        if (!items || !Array.isArray(items) || items.length === 0) {
+          throw new Error("상품 데이터를 불러올 수 없습니다.");
+        }
         const product = items.find((item) => item.productId === productId);
 
         if (product) {
