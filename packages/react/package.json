@@ -8,7 +8,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port 5175",
-    "dev:ssr": "PORT=5176 node server.js",
+    "dev:ssr": "PORT=5176 nodemon server.js",
     "build:client": "rm -rf ./dist/react && vite build --outDir ./dist/react && cp ./dist/react/index.html ./dist/react/404.html",
     "build:client-for-ssg": "rm -rf ../../dist/react && vite build --outDir ../../dist/react",
     "build:server": "vite build --outDir ./dist/react-ssr --ssr src/main-server.tsx",
@@ -30,7 +30,8 @@
   "dependencies": {
     "react": "latest",
     "react-dom": "latest",
-    "@hanghae-plus/lib": "workspace:*"
+    "@hanghae-plus/lib": "workspace:*",
+    "nodemon": "^3.1.11"
   },
   "devDependencies": {
     "@babel/core": "latest",
