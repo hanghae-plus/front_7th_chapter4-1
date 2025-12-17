@@ -130,7 +130,7 @@ async function prefetchData(routeInfo, params, query) {
       mockGetCategories(),
     ]);
 
-    const initialData = {
+    return {
       products: productsData.products,
       totalCount: productsData.pagination.total,
       categories,
@@ -138,8 +138,6 @@ async function prefetchData(routeInfo, params, query) {
       error: null,
       status: "done",
     };
-
-    productStore.dispatch({ type: PRODUCT_ACTIONS.SETUP, payload: initialData });
   } else if (routeInfo.path === "/product/:id/") {
     const product = await mockGetProduct(params.id);
 
@@ -147,15 +145,13 @@ async function prefetchData(routeInfo, params, query) {
 
     const relatedProducts = await mockGetRelatedProducts(product.category1, product.category2, product.productId, 20);
 
-    const initialData = {
+    return {
       currentProduct: product,
       relatedProducts,
       loading: false,
       error: null,
       status: "done",
     };
-
-    productStore.dispatch({ type: PRODUCT_ACTIONS.SETUP, payload: initialData });
   }
 
   return {};
@@ -188,8 +184,6 @@ function generateMetaTags(routeInfo, query, data) {
 }
 
 export async function render(url, query = {}) {
-  productStore.dispatch({ type: PRODUCT_ACTIONS.SETUP, payload: { ...initialProductState } });
-
   const serverRouter = new UniversalRouter("");
   serverRouter.addRoute("/", HomePage);
   serverRouter.addRoute("/product/:id/", ProductDetailPage);
@@ -204,9 +198,9 @@ export async function render(url, query = {}) {
     };
   }
 
-  const errorResult = await prefetchData(routeInfo, routeInfo.params, query);
+  const storeData = await prefetchData(routeInfo, routeInfo.params, query);
 
-  if (errorResult.error) {
+  if (storeData.error) {
     return {
       html: NotFoundPage(),
       head: "<title>404 - Not Found</title>",
@@ -214,17 +208,40 @@ export async function render(url, query = {}) {
     };
   }
 
+  // 서버 렌더링용 임시 스토어 설정 (스토어 자체는 변경하지 않음)
+  productStore.dispatch({ type: PRODUCT_ACTIONS.SETUP, payload: { ...initialProductState, ...storeData } });
+
   global.router = serverRouter;
 
   const html = routeInfo.handler();
-  const storeData = productStore.getState();
   const head = generateMetaTags(routeInfo, query, storeData);
 
   delete global.router;
 
+  // 스토어를 다시 초기화해서 다음 요청에 영향 없도록
+  productStore.dispatch({ type: PRODUCT_ACTIONS.SETUP, payload: { ...initialProductState } });
+
+  // 페이지 타입에 따라 필요한 데이터만 추출
+  let initialData;
+  if (routeInfo.path === "/") {
+    // 홈 페이지: products, categories, totalCount만
+    initialData = {
+      products: storeData.products,
+      categories: storeData.categories,
+      totalCount: storeData.totalCount,
+    };
+  } else if (routeInfo.path === "/product/:id/") {
+    initialData = {
+      currentProduct: storeData.currentProduct,
+      relatedProducts: storeData.relatedProducts,
+    };
+  } else {
+    initialData = storeData;
+  }
+
   const initialDataScript = `
     <script>
-      window.__INITIAL_DATA__ = ${JSON.stringify(storeData)};
+      window.__INITIAL_DATA__ = ${JSON.stringify(initialData)};
     </script>
   `;
 
