@@ -15,6 +15,9 @@ import { render } from "./src/main-server.js";
 import { filterProducts } from "./src/utils/productFilter.js";
 import { injectIntoTemplate } from "./src/utils/htmlUtils.js";
 
+// SSG 빌드 시 global.apiItems 설정 (main-server.js에서 사용)
+global.apiItems = items;
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 

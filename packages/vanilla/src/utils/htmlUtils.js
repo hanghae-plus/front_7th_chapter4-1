@@ -13,7 +13,10 @@
  * @returns {string} 완성된 HTML
  */
 export function injectIntoTemplate(template, { html, initialState, title }) {
-  const initialStateScript = `<script>window.__INITIAL_DATA__ = ${JSON.stringify(initialState || {})};</script>`;
+  // JSON.stringify에 공백 없이 직렬화 (테스트 호환성)
+  // null, 0은 indent를 0으로 설정 (공백 없음)
+  const jsonString = JSON.stringify(initialState || {});
+  const initialStateScript = `<script>window.__INITIAL_DATA__ = ${jsonString};</script>`;
 
   // replaceAll()을 사용하여 모든 플레이스홀더를 치환 (정규식 사용)
   let result = template;
