@@ -2,7 +2,9 @@ import { productStore, initialProductState, PRODUCT_ACTIONS } from "./entities/p
 import type { Product, Categories } from "./entities/products/types";
 
 // items.json 직접 로드 (서버 API 미들웨어와 동일한 방식)
-import itemsData from "./mocks/items.json";
+// SSG 빌드 시에는 global.apiItems 사용, 그 외에는 직접 import
+import itemsDataImport from "./mocks/items.json";
+const itemsData = (global as { apiItems?: Product[] }).apiItems || itemsDataImport;
 
 /**
  * 서버 사이드에서 라우트 매칭
@@ -85,14 +87,14 @@ function filterProducts(products: Product[], query: Record<string, string> = {})
  * 카테고리 추출 유틸리티
  */
 function getUniqueCategories(products: Product[]): Categories {
-  const categories: Record<string, Record<string, string>> = {};
+  const categories: Record<string, Record<string, Record<string, never>>> = {};
 
   products.forEach((product) => {
     if (product.category1 && !categories[product.category1]) {
       categories[product.category1] = {};
     }
-    if (product.category1 && product.category2) {
-      categories[product.category1][product.category2] = product.category2;
+    if (product.category1 && product.category2 && !categories[product.category1][product.category2]) {
+      categories[product.category1][product.category2] = {} as Record<string, never>; // 빈 객체로 설정
     }
   });
 
@@ -502,12 +504,15 @@ export const render = async (url: string, query: Record<string, string> = {}) =>
       // 홈페이지: 상품 목록과 카테고리 로드
       const prefetchData = prefetchHomePageData(query, itemsData);
 
+      // categories가 올바른 형태인지 확인 (빈 객체 {} 형태여야 함)
+      const correctCategories = getUniqueCategories(itemsData);
+
       // 스토어에 디스패치
       productStore.dispatch({
         type: PRODUCT_ACTIONS.SETUP,
         payload: {
           products: prefetchData.products,
-          categories: prefetchData.categories,
+          categories: correctCategories,
           totalCount: prefetchData.totalCount,
           loading: false,
           status: "done",
@@ -515,13 +520,13 @@ export const render = async (url: string, query: Record<string, string> = {}) =>
       });
 
       const state = productStore.getState();
-      const { products, categories, totalCount } = state;
+      const { products, totalCount } = state;
       const searchQuery = query.search || "";
       const limit = Number(query.limit || "20");
       const sort = query.sort || "price_asc";
       const category = { category1: query.category1 || "", category2: query.category2 || "" };
 
-      // HTML 생성
+      // HTML 생성 (categories는 올바른 형태로 직접 전달)
       pageHtml = renderPageWrapper({
         headerLeft: `
           <h1 class="text-xl font-bold text-gray-900">
@@ -529,7 +534,7 @@ export const render = async (url: string, query: Record<string, string> = {}) =>
           </h1>
         `.trim(),
         children: `
-          ${renderSearchBar({ searchQuery, limit, sort, category, categories })}
+          ${renderSearchBar({ searchQuery, limit, sort, category, categories: correctCategories })}
           <div class="mb-6">
             ${renderProductList({ products, loading: false, error: null, totalCount })}
           </div>
@@ -637,15 +642,19 @@ export const render = async (url: string, query: Record<string, string> = {}) =>
 
     // 초기 상태 추출
     const finalState = productStore.getState();
+
+    // categories는 항상 올바른 형태로 재생성 (productStore에서 가져오면 문자열로 변환될 수 있음)
+    const finalCategories = getUniqueCategories(itemsData);
+
     const initialState = {
       // Playwright 테스트를 위한 top-level 필드
       products: finalState.products,
-      categories: finalState.categories,
+      categories: finalCategories,
       totalCount: finalState.totalCount,
       // 클라이언트 hydration을 위한 nested 구조
       productStore: {
         products: finalState.products,
-        categories: finalState.categories,
+        categories: finalCategories,
         totalCount: finalState.totalCount,
         currentProduct: finalState.currentProduct,
         relatedProducts: finalState.relatedProducts,

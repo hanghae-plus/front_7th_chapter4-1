@@ -13,6 +13,9 @@ server.listen({ onUnhandledRequest: "bypass" });
 import items from "./src/mocks/items.json" with { type: "json" };
 import { render } from "./dist/react-ssr/main-server.js";
 
+// SSG 빌드 시 global.apiItems 설정 (main-server.tsx에서 사용)
+global.apiItems = items;
+
 // filterProducts 함수 (main-server.tsx와 동일한 로직)
 function filterProducts(products, query = {}) {
   const { search = "", category1 = "", category2 = "", sort = "price_asc" } = query;
@@ -68,11 +71,34 @@ function injectIntoTemplate(template, { html, initialState, title }) {
   const initialStateJson = JSON.stringify(initialState);
   const initialStateScript = `<script>window.__INITIAL_DATA__ = ${initialStateJson};</script>`;
 
+  // replaceAll()을 사용하여 모든 플레이스홀더를 치환 (정규식 사용)
   let result = template;
-  result = result.replace("<!--app-html-->", html);
-  result = result.replace("<!--app-head-->", `${initialStateScript}`);
-  // title 태그 치환
-  result = result.replace(/<title>.*?<\/title>/, `<title>${title}</title>`);
+
+  // <!--app-html--> 치환 (모든 발생)
+  result = result.replace(/<!--app-html-->/g, html || '<div id="root"></div>');
+
+  // <!--app-head--> 치환 (모든 발생)
+  result = result.replace(/<!--app-head-->/g, initialStateScript);
+
+  // title 태그 처리
+  const titleTag = `<title>${title || "쇼핑몰"}</title>`;
+
+  // <!--app-title--> 플레이스홀더가 있으면 치환
+  if (result.includes("<!--app-title-->")) {
+    result = result.replace(/<!--app-title-->/g, title || "쇼핑몰");
+  } else {
+    // 기존 title 태그가 있으면 치환
+    if (/<title>.*?<\/title>/.test(result)) {
+      result = result.replace(/<title>.*?<\/title>/, titleTag);
+    } else {
+      // title 태그가 없으면 <!--app-head--> 뒤에 추가
+      result = result.replace(/<!--app-head-->/, `${titleTag}\n  <!--app-head-->`);
+      // 만약 <!--app-head-->가 이미 치환되었다면, <head> 태그 안에 추가
+      if (!result.includes("<!--app-head-->") && result.includes("<head>")) {
+        result = result.replace(/<head>/, `<head>\n  ${titleTag}`);
+      }
+    }
+  }
 
   return result;
 }
