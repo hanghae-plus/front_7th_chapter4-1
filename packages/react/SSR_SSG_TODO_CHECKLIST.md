@@ -327,13 +327,13 @@
   - **Acceptance Criteria:** 에러 발생 시 적절한 응답 반환
   - **Notes:** ✅ try-catch 에러 처리 및 vite.ssrFixStacktrace 구현
 
-- [ ] **3.2.6** 서버 시작 및 테스트
+- [x] **3.2.6** 서버 시작 및 테스트
   ```bash
   pnpm run dev:ssr
   # http://localhost:5176 접속
   ```
   - **Acceptance Criteria:** 서버가 시작되고 페이지가 로드됨
-  - **Notes:**
+  - **Notes:** ✅ SSR 성공! 여러 window 관련 버그 수정 완료
 
 ### 3.3 HTML 템플릿 업데이트
 

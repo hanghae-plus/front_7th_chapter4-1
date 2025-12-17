@@ -6,12 +6,18 @@ declare global {
   }
 }
 
-window.__spyCalls = [];
-window.__spyCallsClear = () => {
+// Only initialize in browser environment
+if (typeof window !== "undefined") {
   window.__spyCalls = [];
-};
+  window.__spyCallsClear = () => {
+    window.__spyCalls = [];
+  };
+}
 
 export const log: typeof console.log = (...args) => {
-  window.__spyCalls.push(args);
+  // Only track calls in browser
+  if (typeof window !== "undefined") {
+    window.__spyCalls.push(args);
+  }
   return console.log(...args);
 };
