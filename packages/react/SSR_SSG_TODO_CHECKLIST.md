@@ -262,14 +262,14 @@
 
 ### 3.2 server.js 구현
 
-- [ ] **3.2.1** `server.js` 파일 생성 (또는 기존 파일 업데이트)
+- [x] **3.2.1** `server.js` 파일 생성 (또는 기존 파일 업데이트)
   - Express app 초기화
   - base path 설정 (production: `/front_7th_chapter4-1/react/`)
   - **Acceptance Criteria:** Express 서버 기본 설정 완료
   - **Reference:** `packages/vanilla/server.js` 참고
-  - **Notes:**
+  - **Notes:** ✅ Express app, port, base path 설정 완료
 
-- [ ] **3.2.2** 개발 환경 Vite 미들웨어 설정
+- [x] **3.2.2** 개발 환경 Vite 미들웨어 설정
   ```javascript
   if (!prod) {
     const { createServer } = await import("vite");
@@ -282,9 +282,9 @@
   }
   ```
   - **Acceptance Criteria:** 개발 환경에서 Vite HMR 작동
-  - **Notes:**
+  - **Notes:** ✅ Vite middleware 통합 완료
 
-- [ ] **3.2.3** 프로덕션 환경 정적 파일 서빙 설정
+- [x] **3.2.3** 프로덕션 환경 정적 파일 서빙 설정
   ```javascript
   const staticMiddleware = express.static(
     path.resolve(__dirname, "../../dist/react"),
@@ -299,9 +299,9 @@
   });
   ```
   - **Acceptance Criteria:** 정적 파일과 SSR이 올바르게 분기됨
-  - **Notes:**
+  - **Notes:** ✅ 조건부 정적 파일 서빙 구현 (쿼리 파라미터 분기)
 
-- [ ] **3.2.4** SSR 핸들러 구현
+- [x] **3.2.4** SSR 핸들러 구현
   ```javascript
   app.get(/.*/, async (req, res) => {
     // 1. URL과 query 파싱
@@ -312,9 +312,9 @@
   });
   ```
   - **Acceptance Criteria:** 모든 경로에서 SSR이 작동함
-  - **Notes:**
+  - **Notes:** ✅ SSR handler 구현 (template 로드, render 호출, HTML 조립)
 
-- [ ] **3.2.5** 에러 처리 구현
+- [x] **3.2.5** 에러 처리 구현
   ```javascript
   catch (error) {
     if (!prod && vite) {
@@ -325,7 +325,7 @@
   }
   ```
   - **Acceptance Criteria:** 에러 발생 시 적절한 응답 반환
-  - **Notes:**
+  - **Notes:** ✅ try-catch 에러 처리 및 vite.ssrFixStacktrace 구현
 
 - [ ] **3.2.6** 서버 시작 및 테스트
   ```bash
