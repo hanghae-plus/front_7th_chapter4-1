@@ -337,7 +337,7 @@
 
 ### 3.3 HTML 템플릿 업데이트
 
-- [ ] **3.3.1** `index.html`에 placeholder 추가
+- [x] **3.3.1** `index.html`에 placeholder 추가
   ```html
   <head>
     <!-- ... -->
@@ -349,7 +349,7 @@
   </body>
   ```
   - **Acceptance Criteria:** SSR HTML이 주입될 위치 표시됨
-  - **Notes:**
+  - **Notes:** ✅ placeholders 이미 존재, SEO meta tags (title, description) 추가
 
 ### 3.4 SSR 동작 확인
 
