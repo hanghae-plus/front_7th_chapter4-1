@@ -31,8 +31,10 @@ const mount = (page) => {
   const lifecycle = getPageLifecycle(page);
   if (lifecycle.mounted) return;
 
-  // 마운트 콜백들 실행
-  lifecycle.mount?.();
+  // 마운트 콜백들 실행 (클라이언트에서만)
+  if (typeof window !== "undefined") {
+    lifecycle.mount?.();
+  }
   lifecycle.mounted = true;
   lifecycle.deps = [];
 };
