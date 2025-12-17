@@ -109,6 +109,27 @@ async function prefetchData(route, params, productStore, url) {
       throw new Error("Product not found");
     }
 
+    // 관련 상품 찾기 (같은 카테고리의 다른 상품들)
+    // productId는 문자열이므로 String으로 변환하여 비교
+    const relatedProducts = items
+      .filter(
+        (item) =>
+          String(item.productId) !== String(product.productId) &&
+          item.category1 === product.category1 &&
+          item.category2 === product.category2,
+      )
+      .slice(0, 20);
+
+    // 디버깅: 관련 상품이 없으면 같은 category1만으로도 찾기
+    const fallbackRelatedProducts =
+      relatedProducts.length === 0
+        ? items
+            .filter(
+              (item) => String(item.productId) !== String(product.productId) && item.category1 === product.category1,
+            )
+            .slice(0, 20)
+        : relatedProducts;
+
     // 상세 정보 추가
     const detailProduct = {
       ...product,
@@ -122,6 +143,12 @@ async function prefetchData(route, params, productStore, url) {
     productStore.dispatch({
       type: PRODUCT_ACTIONS.SET_CURRENT_PRODUCT,
       payload: detailProduct,
+    });
+
+    // 관련 상품 설정
+    productStore.dispatch({
+      type: PRODUCT_ACTIONS.SET_RELATED_PRODUCTS,
+      payload: fallbackRelatedProducts,
     });
   }
 }
@@ -146,7 +173,8 @@ export async function render(url) {
   serverRouter.push(url);
   const route = serverRouter.route;
 
-  if (!route) {
+  // 와일드카드 라우트(404) 처리
+  if (!route || route.path === ".*") {
     return {
       head: "<title>404 | 쇼핑몰</title>",
       html: NotFoundPage(),
@@ -161,10 +189,17 @@ export async function render(url) {
   let html, head;
   if (route.path === "/") {
     html = HomePageView({ store: productStore, query });
-    head = "<title>메인 | 쇼핑몰</title>";
+    head = "<title>쇼핑몰 - 홈</title>";
   } else if (route.path === "/product/:id/") {
     html = ProductDetailPageView({ store: productStore, params: route.params });
-    head = `<title>상품 ${route.params.id} 상세 | 쇼핑몰</title>`;
+    // 상품 정보 가져오기
+    const state = productStore.getState();
+    const product = state.currentProduct;
+    if (product) {
+      head = `<title>${product.title} - 쇼핑몰</title>`;
+    } else {
+      head = `<title>상품 ${route.params.id} 상세 | 쇼핑몰</title>`;
+    }
   }
 
   // 7. 초기 데이터 직렬화
