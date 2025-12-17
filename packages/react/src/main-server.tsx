@@ -87,14 +87,17 @@ function filterProducts(products: Product[], query: Record<string, string> = {})
  * 카테고리 추출 유틸리티
  */
 function getUniqueCategories(products: Product[]): Categories {
-  const categories: Record<string, Record<string, Record<string, never>>> = {};
+  // Categories 타입: Record<string, Record<string, string | StringRecord>>
+  // 빈 객체 {}는 StringRecord로 취급되므로 타입 호환성 유지
+  const categories: Record<string, Record<string, string | Record<string, never>>> = {};
 
   products.forEach((product) => {
     if (product.category1 && !categories[product.category1]) {
       categories[product.category1] = {};
     }
     if (product.category1 && product.category2 && !categories[product.category1][product.category2]) {
-      categories[product.category1][product.category2] = {} as Record<string, never>; // 빈 객체로 설정
+      // 빈 객체 {}를 StringRecord로 설정 (Categories 타입과 호환)
+      categories[product.category1][product.category2] = {} as Record<string, never>;
     }
   });
 
