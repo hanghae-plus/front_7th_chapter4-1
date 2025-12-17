@@ -4,7 +4,7 @@ import express from "express";
 // Constants
 const isProduction = process.env.NODE_ENV === "production";
 const port = process.env.PORT || 5173;
-const base = process.env.BASE || "/";
+const base = process.env.BASE || (isProduction ? "/front_7th_chapter4-1/vanilla/" : "/");
 
 // Create http server
 const app = express();
@@ -28,9 +28,9 @@ if (!isProduction) {
 }
 
 // Serve HTML
-app.use("*all", async (req, res) => {
+app.use(async (req, res) => {
   try {
-    const url = req.originalUrl.replace(base, "");
+    const url = req.originalUrl;
 
     /** @type {string} */
     let template;
