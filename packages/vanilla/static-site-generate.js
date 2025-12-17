@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { render } from "./dist/vanilla-ssr/main-server.js";
-import items from "./src/mocks/items.json";
+import items from "./src/mocks/items.json" with { type: "json" };
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
