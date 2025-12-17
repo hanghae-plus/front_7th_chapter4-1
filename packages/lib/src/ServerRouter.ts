@@ -1,0 +1,136 @@
+/**
+ * 서버 사이드 라우터
+ * window 의존성 없이 순수하게 URL 매칭만 수행
+ */
+
+interface Route<Handler> {
+  regex: RegExp;
+  paramNames: string[];
+  handler: Handler;
+  params?: Record<string, string>;
+  path?: string;
+}
+
+export class ServerRouter<Handler> {
+  #routes: Map<string, Route<Handler>>;
+  #baseUrl: string;
+  #currentRoute: Route<Handler> | null;
+  #currentQuery: Record<string, string>;
+
+  constructor(baseUrl = "") {
+    this.#routes = new Map();
+    this.#baseUrl = baseUrl.replace(/\/$/, "");
+    this.#currentRoute = null;
+    this.#currentQuery = {};
+  }
+
+  get baseUrl(): string {
+    return this.#baseUrl;
+  }
+
+  get query(): Record<string, string> {
+    return this.#currentQuery;
+  }
+
+  get params(): Record<string, string> {
+    return this.#currentRoute?.params ?? {};
+  }
+
+  get route(): Route<Handler> | null {
+    return this.#currentRoute;
+  }
+
+  get target(): Handler | undefined {
+    return this.#currentRoute?.handler;
+  }
+
+  // 클라이언트 API 호환용 (서버에서는 아무것도 안함)
+  subscribe() {}
+  push() {}
+  start() {}
+  hydrate() {}
+
+  /**
+   * 라우트 등록
+   * @param path - 경로 패턴 (예: "/product/:id", ".*")
+   * @param handler - 라우트 핸들러
+   */
+  addRoute(path: string, handler: Handler): void {
+    const paramNames: string[] = [];
+    let regex: RegExp;
+
+    // ".*" 같은 정규식 패턴인 경우
+    if (path.startsWith(".*") || path.startsWith("*")) {
+      // catch-all 패턴: 모든 경로 매칭
+      regex = new RegExp(".*");
+    } else {
+      // 일반 경로 패턴을 정규식으로 변환
+      const regexPath = path
+        .replace(/:\w+/g, (match) => {
+          paramNames.push(match.slice(1)); // ':id' -> 'id'
+          return "([^/]+)";
+        })
+        .replace(/\//g, "\\/");
+
+      // ServerRouter는 이미 base path가 제거된 URL을 받으므로 baseUrl을 포함하지 않음
+      regex = new RegExp(`^${regexPath}$`);
+    }
+
+    this.#routes.set(path, {
+      regex,
+      paramNames,
+      handler,
+    });
+  }
+
+  /**
+   * URL 매칭 (서버용)
+   * @param url - 매칭할 URL
+   * @param query - 쿼리 파라미터
+   * @returns 매칭된 라우트 정보
+   */
+  match(url: string, query: Record<string, string> = {}): Route<Handler> | null {
+    // URL 객체 생성 (origin은 임의로 설정, pathname만 필요)
+    const pathname = new URL(url, "http://localhost").pathname;
+
+    // 쿼리를 명시적으로 복사하여 독립적인 객체로 설정 (SSR 환경에서 상태 격리 보장)
+    this.#currentQuery = { ...query };
+
+    for (const [routePath, route] of this.#routes) {
+      const match = pathname.match(route.regex);
+      if (match) {
+        // 매치된 파라미터들을 객체로 변환
+        const params: Record<string, string> = {};
+        route.paramNames.forEach((name, index) => {
+          params[name] = match[index + 1];
+        });
+
+        // 현재 라우트 설정
+        this.#currentRoute = {
+          ...route,
+          params,
+          path: routePath,
+        };
+
+        return this.#currentRoute;
+      }
+    }
+
+    this.#currentRoute = null;
+    return null;
+  }
+
+  /**
+   * 쿼리 파라미터를 객체로 파싱
+   * @param search - 쿼리 문자열
+   * @returns 파싱된 쿼리 객체
+   */
+  static parseQuery(search = ""): Record<string, string> {
+    const params = new URLSearchParams(search);
+    const query: Record<string, string> = {};
+    for (const [key, value] of params) {
+      query[key] = value;
+    }
+    return query;
+  }
+}

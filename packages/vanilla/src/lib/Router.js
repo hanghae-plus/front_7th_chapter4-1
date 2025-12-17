@@ -51,20 +51,28 @@ export class Router {
 
   /**
    * 라우트 등록
-   * @param {string} path - 경로 패턴 (예: "/product/:id")
+   * @param {string} path - 경로 패턴 (예: "/product/:id", ".*")
    * @param {Function} handler - 라우트 핸들러
    */
   addRoute(path, handler) {
-    // 경로 패턴을 정규식으로 변환
     const paramNames = [];
-    const regexPath = path
-      .replace(/:\w+/g, (match) => {
-        paramNames.push(match.slice(1)); // ':id' -> 'id'
-        return "([^/]+)";
-      })
-      .replace(/\//g, "\\/");
+    let regex;
 
-    const regex = new RegExp(`^${this.#baseUrl}${regexPath}$`);
+    // ".*" 같은 정규식 패턴인 경우
+    if (path.startsWith(".*") || path.startsWith("*")) {
+      // catch-all 패턴: 모든 경로 매칭
+      regex = new RegExp(".*");
+    } else {
+      // 일반 경로 패턴을 정규식으로 변환
+      const regexPath = path
+        .replace(/:\w+/g, (match) => {
+          paramNames.push(match.slice(1)); // ':id' -> 'id'
+          return "([^/]+)";
+        })
+        .replace(/\//g, "\\/");
+
+      regex = new RegExp(`^${this.#baseUrl}${regexPath}$`);
+    }
 
     this.#routes.set(path, {
       regex,
@@ -123,6 +131,15 @@ export class Router {
   start() {
     this.#route = this.#findRoute();
     this.#observer.notify();
+  }
+
+  /**
+   * Hydration: 서버 렌더링된 HTML을 유지하면서 라우터 상태만 초기화
+   * 재렌더링을 트리거하지 않음
+   */
+  hydrate() {
+    this.#route = this.#findRoute();
+    // notify()를 호출하지 않아서 재렌더링이 발생하지 않음
   }
 
   /**
