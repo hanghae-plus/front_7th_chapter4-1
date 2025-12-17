@@ -1,5 +1,5 @@
-import { PageWrapper } from "./PageWrapper";
-import { Logo } from "../components";
+import { PageWrapper } from "../PageWrapper";
+import { Logo } from "../../components";
 
 export const NotFoundPage = () =>
   PageWrapper({
