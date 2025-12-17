@@ -412,14 +412,14 @@
 
 ### 4.1 main.tsx 업데이트
 
-- [ ] **4.1.1** `hydrateRoot` import
+- [x] **4.1.1** `hydrateRoot` import
   ```tsx
   import { hydrateRoot } from "react-dom/client";
   ```
   - **Acceptance Criteria:** hydrateRoot 함수 import 완료
-  - **Notes:**
+  - **Notes:** ✅ hydrateRoot import 완료
 
-- [ ] **4.1.2** 초기 상태 복원 로직 추가
+- [x] **4.1.2** 초기 상태 복원 로직 추가
   ```tsx
   const initialData = (window as any).__INITIAL_DATA__;
 
@@ -439,23 +439,23 @@
   }
   ```
   - **Acceptance Criteria:** SSR 상태가 클라이언트 store에 복원됨
-  - **Notes:**
+  - **Notes:** ✅ window.__INITIAL_DATA__에서 product/cart store 복원
 
-- [ ] **4.1.3** 클라이언트 라우터 시작
+- [x] **4.1.3** 클라이언트 라우터 시작
   ```tsx
   router.start();
   ```
   - **Acceptance Criteria:** 클라이언트 라우터가 초기화됨
-  - **Notes:**
+  - **Notes:** ✅ router.start() 호출 (이미 존재했음)
 
-- [ ] **4.1.4** `createRoot` → `hydrateRoot` 변경
+- [x] **4.1.4** `createRoot` → `hydrateRoot` 변경
   ```tsx
   // Before: createRoot(rootElement).render(<App />);
   // After:
   hydrateRoot(rootElement, <App />);
   ```
   - **Acceptance Criteria:** Hydration 사용
-  - **Notes:**
+  - **Notes:** ✅ createRoot → hydrateRoot 변경 완료
 
 ### 4.2 Hydration 테스트
 
