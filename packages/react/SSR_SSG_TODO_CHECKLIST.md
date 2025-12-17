@@ -171,22 +171,22 @@
 
 ### 3.1 main-server.tsx 구현
 
-- [ ] **3.1.1** `src/main-server.tsx` 파일 생성
+- [x] **3.1.1** `src/main-server.tsx` 파일 생성
   - `renderToString` from `react-dom/server` import
   - `createElement` from `react` import
   - **Acceptance Criteria:** 파일 생성 및 기본 imports 완료
-  - **Notes:**
+  - **Notes:** ✅ main-server.tsx 생성, imports 완료
 
-- [ ] **3.1.2** serverFetch 유틸리티 구현
+- [x] **3.1.2** serverFetch 유틸리티 구현
   - `getProducts(params)`: 목 데이터에서 상품 목록 조회
   - `getProduct(productId)`: 상품 상세 조회
   - `getRelatedProducts(product)`: 관련 상품 조회
   - `getCategories()`: 카테고리 목록 조회
   - **Acceptance Criteria:** 서버에서 fetch API 없이 목 데이터 접근 가능
   - **Reference:** `packages/vanilla/src/main-server.js` 참고
-  - **Notes:**
+  - **Notes:** ✅ serverFetch 객체 구현 완료
 
-- [ ] **3.1.3** `render(url, query)` 함수 구현 - Store 초기화
+- [x] **3.1.3** `render(url, query)` 함수 구현 - Store 초기화
   ```tsx
   // 1. Store 리셋 (매 요청마다 깨끗한 상태)
   productStore.dispatch({
@@ -199,17 +199,17 @@
   });
   ```
   - **Acceptance Criteria:** 매 SSR 요청마다 store가 초기화됨
-  - **Notes:**
+  - **Notes:** ✅ productStore.dispatch SETUP, cartStore.dispatch CLEAR_CART
 
-- [ ] **3.1.4** `render(url, query)` 함수 구현 - 라우트 매칭
+- [x] **3.1.4** `render(url, query)` 함수 구현 - 라우트 매칭
   ```tsx
   // 2. ServerRouter로 URL 매칭
   const route = router.match(url, query);
   ```
   - **Acceptance Criteria:** 서버에서 올바른 라우트 매칭됨
-  - **Notes:**
+  - **Notes:** ✅ router.match(url, query) 구현
 
-- [ ] **3.1.5** `render(url, query)` 함수 구현 - 데이터 프리페칭
+- [x] **3.1.5** `render(url, query)` 함수 구현 - 데이터 프리페칭
   ```tsx
   // 3. 라우트별 데이터 로드
   if (route.path === "/") {
@@ -219,18 +219,18 @@
   }
   ```
   - **Acceptance Criteria:** 각 라우트에 필요한 데이터가 store에 로드됨
-  - **Notes:**
+  - **Notes:** ✅ 홈페이지(products+categories), 상품상세(product+related) 프리페칭
 
-- [ ] **3.1.6** `render(url, query)` 함수 구현 - React 렌더링
+- [x] **3.1.6** `render(url, query)` 함수 구현 - React 렌더링
   ```tsx
   // 4. React 컴포넌트 렌더링
   const PageComponent = route.handler;
   const html = renderToString(createElement(PageComponent));
   ```
   - **Acceptance Criteria:** React 컴포넌트가 HTML 문자열로 변환됨
-  - **Notes:**
+  - **Notes:** ✅ renderToString(createElement(PageComponent))
 
-- [ ] **3.1.7** `render(url, query)` 함수 구현 - 메타 태그 생성
+- [x] **3.1.7** `render(url, query)` 함수 구현 - 메타 태그 생성
   ```tsx
   // 5. 메타 정보 생성
   let meta = {
@@ -240,9 +240,9 @@
   // 상품 상세 페이지의 경우 동적 메타 태그
   ```
   - **Acceptance Criteria:** SEO를 위한 메타 정보 생성됨
-  - **Notes:**
+  - **Notes:** ✅ meta.title, meta.description 동적 생성
 
-- [ ] **3.1.8** `render(url, query)` 함수 구현 - 상태 반환
+- [x] **3.1.8** `render(url, query)` 함수 구현 - 상태 반환
   ```tsx
   // 6. HTML과 state 반환
   return {
@@ -258,7 +258,7 @@
   };
   ```
   - **Acceptance Criteria:** 클라이언트에서 사용할 초기 상태 직렬화됨
-  - **Notes:**
+  - **Notes:** ✅ html, state, meta 반환 구현 완료
 
 ### 3.2 server.js 구현
 
