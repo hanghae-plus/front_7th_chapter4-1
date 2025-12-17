@@ -48,3 +48,5 @@ export const HomePageClient = withLifecycle(
   },
   () => HomePageView({ store: productStore, query: router.query }),
 );
+
+export const HomePage = HomePageClient;
