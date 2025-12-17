@@ -25,6 +25,7 @@ if (!prod) {
   vite = await createServer({
     server: { middlewareMode: true },
     base,
+    appType: "custom",
   });
 
   app.use(vite.middlewares);
