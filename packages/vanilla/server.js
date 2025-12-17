@@ -15,9 +15,24 @@ const base = process.env.BASE || (prod ? "/front_7th_chapter4-1/vanilla/" : "/")
 
 const app = express();
 
-// HTML 템플릿 읽기
-const templatePath = path.join(__dirname, "index.html");
-const template = fs.readFileSync(templatePath, "utf-8");
+// HTML 템플릿 읽기 (프로덕션에서는 빌드된 템플릿 우선 사용)
+let templatePath;
+let template;
+if (prod) {
+  // 프로덕션: 빌드된 템플릿 우선, 없으면 원본 사용
+  const builtTemplatePath = path.join(__dirname, "dist/vanilla/index.html");
+  if (fs.existsSync(builtTemplatePath)) {
+    templatePath = builtTemplatePath;
+    template = fs.readFileSync(templatePath, "utf-8");
+  } else {
+    templatePath = path.join(__dirname, "index.html");
+    template = fs.readFileSync(templatePath, "utf-8");
+  }
+} else {
+  // 개발: 원본 템플릿 사용
+  templatePath = path.join(__dirname, "index.html");
+  template = fs.readFileSync(templatePath, "utf-8");
+}
 
 // SSR 렌더링 함수 import (비동기 초기화)
 let render;
@@ -210,11 +225,23 @@ const ssrMiddleware = async (req, res, next) => {
 
   try {
     // URL과 쿼리 파라미터 추출
-    // req.originalUrl은 원본 URL (base 경로 포함)
-    // req.path는 Express가 파싱한 경로 (쿼리 제외)
-    // sirv 미들웨어는 base 경로를 제거하지 않으므로, req.path는 여전히 base 경로를 포함할 수 있음
-    // 따라서 원본 URL을 사용하여 base 경로를 포함한 전체 경로를 전달
-    const url = req.originalUrl?.split("?")[0] || req.url.split("?")[0];
+    // 프로덕션에서 app.use(base, ssrMiddleware)를 사용하면:
+    // - req.path는 base 경로가 제거된 상태 (예: /)
+    // - req.originalUrl은 전체 경로 (예: /front_7th_chapter4-1/vanilla/)
+    // matchRoute 함수가 base 경로를 제거하므로, 전체 URL을 전달해야 함
+    let url;
+    if (prod) {
+      // 프로덕션: req.originalUrl 사용 (base 경로 포함)
+      // originalUrl이 없으면 base + req.path로 구성
+      url = req.originalUrl?.split("?")[0];
+      if (!url) {
+        const path = req.path || "/";
+        url = (base.endsWith("/") ? base.slice(0, -1) : base) + (path.startsWith("/") ? path : "/" + path);
+      }
+    } else {
+      // 개발: req.url 또는 req.path 사용
+      url = req.url?.split("?")[0] || req.path || "/";
+    }
     const query = req.query;
 
     // 서버에서 렌더링 (타임아웃 적용)
