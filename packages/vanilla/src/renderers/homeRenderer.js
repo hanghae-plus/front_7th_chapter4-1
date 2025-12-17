@@ -41,7 +41,7 @@ export function renderHomePage(data) {
   });
 
   return {
-    head: `<title>메인페이지 | 쇼핑몰</title>`,
+    head: `<title>쇼핑몰 - 홈</title>`,
     html,
   };
 }

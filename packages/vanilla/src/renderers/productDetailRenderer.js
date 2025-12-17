@@ -245,7 +245,7 @@ export function renderProductDetailPage(data) {
   });
 
   return {
-    head: `<title>${product.title} | 쇼핑몰</title>`,
+    head: `<title>${product.title} - 쇼핑몰</title>`,
     html,
   };
 }

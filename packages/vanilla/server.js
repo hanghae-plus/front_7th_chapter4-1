@@ -43,7 +43,7 @@ app.use("*all", async (req, res) => {
       render = (await vite.ssrLoadModule("/src/main-server.js")).render;
     } else {
       // Cached production asset
-      template = fs.readFile("./dist/vanilla/index.html", "utf-8");
+      template = await fs.readFile("./dist/vanilla/index.html", "utf-8");
       render = (await import("./dist/vanilla-ssr/main-server.js")).render;
     }
 
