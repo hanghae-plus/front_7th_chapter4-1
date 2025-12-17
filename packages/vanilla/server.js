@@ -3,7 +3,7 @@ import { createServer } from "vite";
 import fs from "node:fs";
 
 const prod = process.env.NODE_ENV === "production";
-const port = process.env.PORT || 5173;
+const port = process.env.PORT || 5174;
 const base = process.env.BASE || (prod ? "/front_7th_chapter4-1/vanilla/" : "");
 
 const app = express();
@@ -26,7 +26,7 @@ if (!prod) {
 
 app.use("*all", async (req, res) => {
   try {
-    const url = req.originalUrl.replace(base, "");
+    const url = req.originalUrl;
     const origin = `${req.protocol}://${req.get("host")}`;
 
     /** @type {string} */
@@ -44,11 +44,13 @@ app.use("*all", async (req, res) => {
 
     const rendered = await render(url, origin);
 
-    const html = template
-      .replace(`<!--app-head-->`, rendered.head ?? "")
-      .replace(`<!--app-html-->`, rendered.html ?? "");
+    if (rendered) {
+      const html = template
+        .replace(`<!--app-head-->`, rendered.head ?? "")
+        .replace(`<!--app-html-->`, rendered.html ?? "");
 
-    res.status(200).set({ "Content-Type": "text/html" }).send(html);
+      res.status(200).set({ "Content-Type": "text/html" }).send(html);
+    }
   } catch (e) {
     vite?.ssrFixStacktrace(e);
     console.log(e.stack);
