@@ -6,9 +6,6 @@ const isProduction = process.env.NODE_ENV === "production";
 const port = process.env.PORT || 5173;
 const base = process.env.BASE || "/";
 
-// Cached production assets
-const templateHtml = isProduction ? await fs.readFile("./dist/client/index.html", "utf-8") : "";
-
 // Create http server
 const app = express();
 
@@ -27,7 +24,7 @@ if (!isProduction) {
   const compression = (await import("compression")).default;
   const sirv = (await import("sirv")).default;
   app.use(compression());
-  app.use(base, sirv("./dist/client", { extensions: [] }));
+  app.use(base, sirv("./dist/vanilla", { extensions: [] }));
 }
 
 // Serve HTML
@@ -45,15 +42,20 @@ app.use("*all", async (req, res) => {
       template = await vite.transformIndexHtml(url, template);
       render = (await vite.ssrLoadModule("/src/main-server.js")).render;
     } else {
-      template = templateHtml;
-      render = (await import("./dist/server/main-server.js")).render;
+      // Cached production asset
+      template = fs.readFile("./dist/vanilla/index.html", "utf-8");
+      render = (await import("./dist/vanilla-ssr/main-server.js")).render;
     }
 
-    const rendered = await render(url);
+    const rendered = await render(url, req.query);
 
     const html = template
       .replace(`<!--app-head-->`, rendered.head ?? "")
-      .replace(`<!--app-html-->`, rendered.html ?? "");
+      .replace(`<!--app-html-->`, rendered.html ?? "")
+      .replace(
+        `<!-- app-data -->`,
+        `<script>window.__INITIAL_DATA__ = ${JSON.stringify(rendered.__INITIAL_DATA__ || {})};</script>`,
+      );
 
     res.status(200).set({ "Content-Type": "text/html" }).send(html);
   } catch (e) {

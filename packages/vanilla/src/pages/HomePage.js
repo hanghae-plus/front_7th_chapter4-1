@@ -1,5 +1,5 @@
 import { ProductList, SearchBar } from "../components";
-import { productStore } from "../stores";
+import { PRODUCT_ACTIONS, productStore } from "../stores";
 import { router, withLifecycle } from "../router";
 import { loadProducts, loadProductsAndCategories } from "../services";
 import { PageWrapper } from "./PageWrapper.js";
@@ -7,6 +7,21 @@ import { PageWrapper } from "./PageWrapper.js";
 export const HomePage = withLifecycle(
   {
     onMount: () => {
+      if (window.__INITIAL_DATA__) {
+        const data = window.__INITIAL_DATA__;
+        console.log("data ::", data.pagination);
+        productStore.dispatch({
+          type: PRODUCT_ACTIONS.SETUP,
+          payload: {
+            products: data.products,
+            categories: data.categories,
+            totalCount: data.pagination.total,
+            loading: false,
+            status: "done",
+          },
+        });
+        return;
+      }
       loadProductsAndCategories();
     },
     watches: [
