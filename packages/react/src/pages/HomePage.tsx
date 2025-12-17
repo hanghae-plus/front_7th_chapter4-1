@@ -29,7 +29,12 @@ const unregisterScrollHandler = () => {
 export const HomePage = () => {
   useEffect(() => {
     registerScrollHandler();
-    loadProductsAndCategories();
+
+    // SSR에서 이미 데이터가 로드된 경우 다시 로드하지 않음
+    const hasInitialData = typeof window !== "undefined" && window.__INITIAL_DATA__;
+    if (!hasInitialData) {
+      loadProductsAndCategories();
+    }
 
     return unregisterScrollHandler;
   }, []);
