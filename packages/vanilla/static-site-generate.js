@@ -15,6 +15,9 @@ async function generateStaticSite() {
     const homeHtml = template.replace("<!--app-head-->", homeResult.head).replace("<!--app-html-->", homeResult.html);
     fs.writeFileSync("../../dist/vanilla/index.html", homeHtml);
 
+    // 404.html 생성 (SPA fallback용 - GitHub Pages에서 없는 경로 접근 시)
+    fs.copyFileSync("../../dist/vanilla/index.html", "../../dist/vanilla/404.html");
+
     // 상품 상세 페이지들 생성 (테스트에서 확인하는 상품들)
     const productIds = ["85067212996", "86940857379"];
 
