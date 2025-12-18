@@ -4,10 +4,13 @@
  * @param {Storage} storage - 기본값은 localStorage
  * @returns {Object} { get, set, reset }
  */
-export const createStorage = (key, storage = window.localStorage) => {
+export const createStorage = (key, storage) => {
+  // 서버 환경 처리: window가 없으면 가짜 storage 사용
+  const actualStorage = storage || (typeof window !== "undefined" ? window.localStorage : createMockStorage());
+
   const get = () => {
     try {
-      const item = storage.getItem(key);
+      const item = actualStorage.getItem(key);
       return item ? JSON.parse(item) : null;
     } catch (error) {
       console.error(`Error parsing storage item for key "${key}":`, error);
@@ -17,7 +20,7 @@ export const createStorage = (key, storage = window.localStorage) => {
 
   const set = (value) => {
     try {
-      storage.setItem(key, JSON.stringify(value));
+      actualStorage.setItem(key, JSON.stringify(value));
     } catch (error) {
       console.error(`Error setting storage item for key "${key}":`, error);
     }
@@ -25,7 +28,7 @@ export const createStorage = (key, storage = window.localStorage) => {
 
   const reset = () => {
     try {
-      storage.removeItem(key);
+      actualStorage.removeItem(key);
     } catch (error) {
       console.error(`Error removing storage item for key "${key}":`, error);
     }
@@ -33,3 +36,17 @@ export const createStorage = (key, storage = window.localStorage) => {
 
   return { get, set, reset };
 };
+
+// 서버 환경용 가짜 storage (메모리에만 저장)
+function createMockStorage() {
+  const data = {};
+  return {
+    getItem: (key) => data[key] || null,
+    setItem: (key, value) => {
+      data[key] = value;
+    },
+    removeItem: (key) => {
+      delete data[key];
+    },
+  };
+}

@@ -7,6 +7,8 @@ import { PRODUCT_ACTIONS } from "./actionTypes";
 export const initialProductState = {
   // 상품 목록
   products: [],
+  // 카테고리 목록
+  categories: {},
   totalCount: 0,
 
   // 상품 상세
@@ -17,15 +19,12 @@ export const initialProductState = {
   loading: true,
   error: null,
   status: "idle",
-
-  // 카테고리 목록
-  categories: {},
 };
 
 /**
  * 상품 스토어 리듀서
  */
-const productReducer = (state, action) => {
+export const productReducer = (state, action) => {
   switch (action.type) {
     case PRODUCT_ACTIONS.SET_STATUS:
       return {

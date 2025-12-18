@@ -1,0 +1,82 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: pnpm
+
+      - name: Install deps
+        run: pnpm install
+
+      - name: Build
+        run: pnpm run build
+
+      # 루트 index.html 생성 (vanilla로 리다이렉트)
+      - name: Create root index.html
+        run: |
+          mkdir -p dist
+          cat > dist/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <title>프로젝트 선택</title>
+            <style>
+              body { font-family: Arial, sans-serif; padding: 50px; text-align: center; }
+              h1 { margin-bottom: 30px; }
+              a { display: inline-block; margin: 10px; padding: 15px 30px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }
+              a:hover { background: #0056b3; }
+            </style>
+          </head>
+          <body>
+            <h1>프로젝트 선택</h1>
+            <a href="/front_7th_chapter4-1/vanilla/">Vanilla SSR</a>
+            <a href="/front_7th_chapter4-1/react/">React SSR</a>
+          </body>
+          </html>
+          EOF
+
+      # 404.html 생성 - SPA 라우팅 지원
+      - name: Create 404.html for SPA routing
+        run: |
+          cp dist/index.html dist/404.html
+          if [ -f dist/vanilla/index.html ]; then
+            cp dist/vanilla/index.html dist/vanilla/404.html
+          fi
+          if [ -f dist/react/index.html ]; then
+            cp dist/react/index.html dist/react/404.html
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

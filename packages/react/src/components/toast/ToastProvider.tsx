@@ -44,7 +44,7 @@ export const ToastProvider = memo(({ children }: PropsWithChildren) => {
     <ToastCommandContext value={commandValue}>
       <ToastStateContext value={state}>
         {children}
-        {visible && createPortal(<Toast />, document.body)}
+        {visible && typeof document !== "undefined" && document.body && createPortal(<Toast />, document.body)}
       </ToastStateContext>
     </ToastCommandContext>
   );

@@ -38,7 +38,10 @@ export const ModalProvider = memo(({ children }: PropsWithChildren) => {
   return (
     <ModalContext value={contextValue}>
       {children}
-      {content && createPortal(<Modal>{content}</Modal>, document.body)}
+      {content &&
+        typeof document !== "undefined" &&
+        document.body &&
+        createPortal(<Modal>{content}</Modal>, document.body)}
     </ModalContext>
   );
 });

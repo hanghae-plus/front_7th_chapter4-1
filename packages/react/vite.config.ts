@@ -6,4 +6,8 @@ const base: string = process.env.NODE_ENV === "production" ? "/front_7th_chapter
 export default createViteConfig({
   base,
   plugins: [react()],
+  ssr: {
+    // @hanghae-plus/lib만 번들에 포함하고, react와 react-dom은 externalize
+    noExternal: ["@hanghae-plus/lib"],
+  },
 });

@@ -25,25 +25,33 @@ export class Router<Handler extends (...args: any[]) => any> {
     this.#route = null;
     this.#baseUrl = baseUrl.replace(/\/$/, "");
 
-    window.addEventListener("popstate", () => {
-      this.#route = this.#findRoute();
-      this.#observer.notify();
-    });
+    // 클라이언트에서만 이벤트 리스너 등록 (서버에서는 window/document가 없음)
+    if (typeof window !== "undefined") {
+      window.addEventListener("popstate", () => {
+        this.#route = this.#findRoute();
+        this.#observer.notify();
+      });
 
-    document.addEventListener("click", (e) => {
-      const target = e.target as HTMLElement;
-      if (!target?.closest("[data-link]")) {
-        return;
+      if (typeof document !== "undefined") {
+        document.addEventListener("click", (e) => {
+          const target = e.target as HTMLElement;
+          if (!target?.closest("[data-link]")) {
+            return;
+          }
+          e.preventDefault();
+          const url = target.getAttribute("href") ?? target.closest("[data-link]")?.getAttribute("href");
+          if (url) {
+            this.push(url);
+          }
+        });
       }
-      e.preventDefault();
-      const url = target.getAttribute("href") ?? target.closest("[data-link]")?.getAttribute("href");
-      if (url) {
-        this.push(url);
-      }
-    });
+    }
   }
 
   get query(): StringRecord {
+    if (typeof window === "undefined") {
+      return {};
+    }
     return Router.parseQuery(window.location.search);
   }
 
@@ -85,8 +93,16 @@ export class Router<Handler extends (...args: any[]) => any> {
     });
   }
 
-  #findRoute(url = window.location.pathname) {
-    const { pathname } = new URL(url, window.location.origin);
+  #findRoute(url?: string) {
+    // 서버에서는 url을 필수로 받아야 함
+    if (!url) {
+      if (typeof window === "undefined") {
+        return null;
+      }
+      url = window.location.pathname;
+    }
+    const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost";
+    const { pathname } = new URL(url, origin);
     for (const [routePath, route] of this.#routes) {
       const match = pathname.match(route.regex);
       if (match) {
@@ -111,11 +127,14 @@ export class Router<Handler extends (...args: any[]) => any> {
       // baseUrl이 없으면 자동으로 붙여줌
       const fullUrl = url.startsWith(this.#baseUrl) ? url : this.#baseUrl + (url.startsWith("/") ? url : "/" + url);
 
-      const prevFullUrl = `${window.location.pathname}${window.location.search}`;
+      // 클라이언트에서만 히스토리 업데이트 (서버에서는 window.history가 없음)
+      if (typeof window !== "undefined") {
+        const prevFullUrl = `${window.location.pathname}${window.location.search}`;
 
-      // 히스토리 업데이트
-      if (prevFullUrl !== fullUrl) {
-        window.history.pushState(null, "", fullUrl);
+        // 히스토리 업데이트
+        if (prevFullUrl !== fullUrl) {
+          window.history.pushState(null, "", fullUrl);
+        }
       }
 
       this.#route = this.#findRoute(fullUrl);
@@ -130,7 +149,14 @@ export class Router<Handler extends (...args: any[]) => any> {
     this.#observer.notify();
   }
 
-  static parseQuery = (search = window.location.search) => {
+  static parseQuery = (search?: string) => {
+    // 서버에서는 search 파라미터를 명시적으로 받아야 함
+    if (!search) {
+      if (typeof window === "undefined") {
+        return {};
+      }
+      search = window.location.search;
+    }
     const params = new URLSearchParams(search);
     const query: StringRecord = {};
     for (const [key, value] of params) {
@@ -149,7 +175,7 @@ export class Router<Handler extends (...args: any[]) => any> {
     return params.toString();
   };
 
-  static getUrl = (newQuery: QueryPayload, baseUrl = "") => {
+  static getUrl = (newQuery: QueryPayload, baseUrl = "", pathname?: string) => {
     const currentQuery = Router.parseQuery();
     const updatedQuery = { ...currentQuery, ...newQuery };
 
@@ -161,6 +187,14 @@ export class Router<Handler extends (...args: any[]) => any> {
     });
 
     const queryString = Router.stringifyQuery(updatedQuery);
-    return `${baseUrl}${window.location.pathname.replace(baseUrl, "")}${queryString ? `?${queryString}` : ""}`;
+    // 서버에서는 pathname을 파라미터로 받아야 함
+    if (!pathname) {
+      if (typeof window === "undefined") {
+        pathname = "/";
+      } else {
+        pathname = window.location.pathname;
+      }
+    }
+    return `${baseUrl}${pathname.replace(baseUrl, "")}${queryString ? `?${queryString}` : ""}`;
   };
 }
