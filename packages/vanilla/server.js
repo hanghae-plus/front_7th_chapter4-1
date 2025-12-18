@@ -1,5 +1,8 @@
 import express from "express";
 import fs from "fs";
+import { server as mswServer } from "./src/mocks/server.js";
+
+mswServer.listen({ onUnhandledRequest: "bypass" });
 
 const prod = process.env.NODE_ENV === "production";
 const port = process.env.PORT || 5173;
