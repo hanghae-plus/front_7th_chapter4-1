@@ -1,9 +1,18 @@
-import { cartStore, uiStore } from "../stores";
+import { cartStore as clientCartStore, uiStore as clientUiStore } from "../stores";
 import { CartModal, Footer, Toast } from "../components";
 
+// 서버 환경 감지 및 context 가져오기
+const getContext = () => {
+  if (typeof global !== "undefined" && global.serverContext) {
+    return global.serverContext;
+  }
+  return { cartStore: clientCartStore, uiStore: clientUiStore };
+};
+
 export const PageWrapper = ({ headerLeft, children }) => {
-  const cart = cartStore.getState();
-  const { cartModal, toast } = uiStore.getState();
+  const { cartStore, uiStore } = getContext();
+  const cart = cartStore?.getState() || { items: [] };
+  const { cartModal, toast } = uiStore?.getState() || { cartModal: { isOpen: false }, toast: {} };
   const cartSize = cart.items.length;
 
   const cartCount = `

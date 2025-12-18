@@ -14,10 +14,13 @@ export class Router {
     this.#route = null;
     this.#baseUrl = baseUrl.replace(/\/$/, "");
 
-    window.addEventListener("popstate", () => {
-      this.#route = this.#findRoute();
-      this.#observer.notify();
-    });
+    // 서버 환경에서는 window 이벤트 리스너 등록 안 함
+    if (typeof window !== "undefined") {
+      window.addEventListener("popstate", () => {
+        this.#route = this.#findRoute();
+        this.#observer.notify();
+      });
+    }
   }
 
   get baseUrl() {
@@ -25,10 +28,12 @@ export class Router {
   }
 
   get query() {
+    if (typeof window === "undefined") return {};
     return Router.parseQuery(window.location.search);
   }
 
   set query(newQuery) {
+    if (typeof window === "undefined") return;
     const newUrl = Router.getUrl(newQuery, this.#baseUrl);
     this.push(newUrl);
   }
@@ -73,8 +78,10 @@ export class Router {
     });
   }
 
-  #findRoute(url = window.location.pathname) {
-    const { pathname } = new URL(url, window.location.origin);
+  #findRoute(url) {
+    if (typeof window === "undefined") return null;
+    const actualUrl = url || window.location.pathname;
+    const { pathname } = new URL(actualUrl, window.location.origin);
     for (const [routePath, route] of this.#routes) {
       const match = pathname.match(route.regex);
       if (match) {
@@ -99,6 +106,7 @@ export class Router {
    * @param {string} url - 이동할 경로
    */
   push(url) {
+    if (typeof window === "undefined") return;
     try {
       // baseUrl이 없으면 자동으로 붙여줌
       let fullUrl = url.startsWith(this.#baseUrl) ? url : this.#baseUrl + (url.startsWith("/") ? url : "/" + url);
@@ -130,8 +138,10 @@ export class Router {
    * @param {string} search - location.search 또는 쿼리 문자열
    * @returns {Object} 파싱된 쿼리 객체
    */
-  static parseQuery = (search = window.location.search) => {
-    const params = new URLSearchParams(search);
+  static parseQuery = (search) => {
+    if (typeof window === "undefined" && !search) return {};
+    const actualSearch = search || (typeof window !== "undefined" ? window.location.search : "");
+    const params = new URLSearchParams(actualSearch);
     const query = {};
     for (const [key, value] of params) {
       query[key] = value;
@@ -155,6 +165,7 @@ export class Router {
   };
 
   static getUrl = (newQuery, baseUrl = "") => {
+    if (typeof window === "undefined") return "/";
     const currentQuery = Router.parseQuery();
     const updatedQuery = { ...currentQuery, ...newQuery };
 
