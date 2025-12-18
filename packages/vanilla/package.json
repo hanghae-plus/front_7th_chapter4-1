@@ -5,11 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port 5173",
-    "dev:ssr": "PORT=5174 node server.js",
+    "dev:ssr": "PORT=5173 node server.js",
     "build:client": "rm -rf ./dist/vanilla && vite build --outDir ./dist/vanilla && cp ./dist/vanilla/index.html ./dist/vanilla/404.html",
     "build:client-for-ssg": "rm -rf ../../dist/vanilla && vite build --outDir ../../dist/vanilla",
     "build:server": "vite build --outDir ./dist/vanilla-ssr --ssr src/main-server.js",
-    "build:ssg": "pnpm run build:client-for-ssg && node static-site-generate.js",
+    "build:ssg": "pnpm run build:client-for-ssg && pnpm run build:server && node static-site-generate.js",
     "build:without-ssg": "pnpm run build:client && pnpm run build:server",
     "build": "pnpm run build:client && pnpm run build:server && pnpm run build:ssg",
     "lint:fix": "eslint --fix ./src",
@@ -20,6 +20,8 @@
     "preview:ssr-with-build": "pnpm run build:without-ssg && pnpm run preview:ssr",
     "preview:ssg": "vite preview --outDir ../../dist/vanilla --port 4178",
     "preview:ssg-with-build": "pnpm run build && pnpm run preview:ssg",
+    "deploy": "node deploy.js",
+    "deploy:build": "pnpm run build:ssg && pnpm run deploy",
     "serve:test:dev": "concurrently -n \"DevCSR,DevSSR,ProdCSR,ProdSSR,SSG\" -c \"#FF6B6B,#006D77,#FFD166,#6A5ACD,#00C2A8\" \"pnpm run dev\" \"pnpm run dev:ssr\" \"pnpm run preview:csr\" \"pnpm run preview:ssr\" \"pnpm run preview:ssg\"",
     "serve:test": "pnpm run build:without-ssg && pnpm run build:ssg && pnpm run serve:test:dev",
     "prepare": "husky"

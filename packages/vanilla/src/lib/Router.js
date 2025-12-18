@@ -8,16 +8,21 @@ export class Router {
   #route;
   #observer = createObserver();
   #baseUrl;
+  #serverQuery = {}; // 서버 환경에서 사용할 query
+  #serverParams = {}; // 서버 환경에서 사용할 params
 
   constructor(baseUrl = "") {
     this.#routes = new Map();
     this.#route = null;
     this.#baseUrl = baseUrl.replace(/\/$/, "");
 
-    window.addEventListener("popstate", () => {
-      this.#route = this.#findRoute();
-      this.#observer.notify();
-    });
+    // SSR 환경에서는 window가 없으므로 이벤트 리스너를 등록하지 않음
+    if (typeof window !== "undefined") {
+      window.addEventListener("popstate", () => {
+        this.#route = this.#findRoute();
+        this.#observer.notify();
+      });
+    }
   }
 
   get baseUrl() {
@@ -25,6 +30,10 @@ export class Router {
   }
 
   get query() {
+    // SSR 환경에서는 #serverQuery 반환
+    if (typeof window === "undefined") {
+      return this.#serverQuery;
+    }
     return Router.parseQuery(window.location.search);
   }
 
@@ -34,6 +43,10 @@ export class Router {
   }
 
   get params() {
+    // SSR 환경에서는 #serverParams 반환
+    if (typeof window === "undefined") {
+      return this.#serverParams;
+    }
     return this.#route?.params ?? {};
   }
 
@@ -73,8 +86,9 @@ export class Router {
     });
   }
 
-  #findRoute(url = window.location.pathname) {
-    const { pathname } = new URL(url, window.location.origin);
+  #findRoute(url = typeof window !== "undefined" ? window.location.pathname : "/") {
+    const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost";
+    const { pathname } = new URL(url, origin);
     for (const [routePath, route] of this.#routes) {
       const match = pathname.match(route.regex);
       if (match) {
@@ -100,6 +114,11 @@ export class Router {
    */
   push(url) {
     try {
+      // SSR 환경에서는 push 메서드를 실행하지 않음
+      if (typeof window === "undefined") {
+        return;
+      }
+
       // baseUrl이 없으면 자동으로 붙여줌
       let fullUrl = url.startsWith(this.#baseUrl) ? url : this.#baseUrl + (url.startsWith("/") ? url : "/" + url);
 
@@ -126,11 +145,47 @@ export class Router {
   }
 
   /**
+   * 서버 환경에서 라우트 설정
+   * @param {string} url - 요청 URL
+   * @param {Object} query - 쿼리 파라미터 객체
+   * @param {Object} params - 라우트 파라미터 객체
+   */
+  setServerRoute(url, query = {}, params = {}) {
+    // 서버 환경에서만 사용
+    if (typeof window === "undefined") {
+      this.#serverQuery = query;
+      this.#serverParams = params;
+
+      // 라우트 찾기
+      const pathname = url.split("?")[0];
+      const cleanPath = pathname.replace(this.#baseUrl, "").replace(/\/$/, "") || "/";
+
+      for (const [routePath, route] of this.#routes) {
+        const regexPath = routePath.replace(/:\w+/g, "([^/]+)").replace(/\//g, "\\/");
+        const regex = new RegExp(`^${regexPath}$`);
+        const match = cleanPath.match(regex);
+
+        if (match) {
+          this.#route = {
+            ...route,
+            params: { ...params },
+            path: routePath,
+          };
+          return;
+        }
+      }
+
+      // 매칭되는 라우트가 없으면 null
+      this.#route = null;
+    }
+  }
+
+  /**
    * 쿼리 파라미터를 객체로 파싱
    * @param {string} search - location.search 또는 쿼리 문자열
    * @returns {Object} 파싱된 쿼리 객체
    */
-  static parseQuery = (search = window.location.search) => {
+  static parseQuery = (search = typeof window !== "undefined" ? window.location.search : "") => {
     const params = new URLSearchParams(search);
     const query = {};
     for (const [key, value] of params) {
@@ -155,6 +210,11 @@ export class Router {
   };
 
   static getUrl = (newQuery, baseUrl = "") => {
+    // SSR 환경에서는 window가 없으므로 빈 문자열 반환
+    if (typeof window === "undefined") {
+      return "";
+    }
+
     const currentQuery = Router.parseQuery();
     const updatedQuery = { ...currentQuery, ...newQuery };
 

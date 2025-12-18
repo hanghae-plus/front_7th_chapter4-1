@@ -1,4 +1,13 @@
 import express from "express";
+import compression from "compression";
+import sirv from "sirv";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+import { readdirSync, readFileSync } from "fs";
+import { render } from "./dist/vanilla-ssr/main-server.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const prod = process.env.NODE_ENV === "production";
 const port = process.env.PORT || 5173;
@@ -6,29 +15,206 @@ const base = process.env.BASE || (prod ? "/front_7th_chapter4-1/vanilla/" : "/")
 
 const app = express();
 
-const render = () => {
-  return `<div>안녕하세요</div>`;
-};
+/**
+ * 프로덕션 환경에서 빌드된 파일명 찾기
+ */
+function findAssetFiles() {
+  if (!prod) {
+    return { js: "index.js", css: "index.css" };
+  }
 
-app.get("*all", (req, res) => {
-  res.send(
-    `
+  try {
+    const assetsDir = join(__dirname, "dist/vanilla/assets");
+    const files = readdirSync(assetsDir);
+
+    const jsFile = files.find((file) => file.startsWith("index-") && file.endsWith(".js"));
+    const cssFile = files.find((file) => file.startsWith("index-") && file.endsWith(".css"));
+
+    return {
+      js: jsFile ? `assets/${jsFile}` : "assets/index.js",
+      css: cssFile ? `assets/${cssFile}` : "assets/index.css",
+    };
+  } catch (error) {
+    console.warn("Failed to find asset files, using default names:", error.message);
+    return { js: "assets/index.js", css: "assets/index.css" };
+  }
+}
+
+const assetFiles = findAssetFiles();
+
+/**
+ * HTML 템플릿 생성 함수
+ */
+function createHtmlTemplate(html, headContent = "", baseUrl, isProd, assets, initialData = null) {
+  const cssPath = `${baseUrl}${assets.css}`;
+  const jsPath = `${baseUrl}${assets.js}`;
+
+  // 개발 환경에서는 index.html을 읽어서 사용
+  // 프로덕션 환경에서는 빌드된 index.html을 사용
+  let template;
+  try {
+    const templatePath = prod ? join(__dirname, "dist/vanilla/index.html") : join(__dirname, "index.html");
+    template = readFileSync(templatePath, "utf-8");
+  } catch {
+    // 템플릿 파일이 없으면 기본 템플릿 사용
+    template = `
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!--app-head-->
+    <link rel="stylesheet" href="${cssPath}">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: '#3b82f6',
+              secondary: '#6b7280'
+            }
+          }
+        }
+      }
+    </script>
+  </head>
+  <body class="bg-gray-50">
+    <div id="root"><!--app-html--></div>
+    <script type="module" src="${jsPath}"></script>
+  </body>
+</html>`.trim();
+  }
+
+  // 플레이스홀더 치환
+  let result = template.replace("<!--app-html-->", html);
+
+  // app-head 치환 (headContent가 있으면 추가, 없으면 제거)
+  if (headContent) {
+    result = result.replace("<!--app-head-->", headContent);
+  } else {
+    result = result.replace("<!--app-head-->", "");
+  }
+
+  // 프로덕션 환경에서 에셋 경로 업데이트
+  if (prod) {
+    result = result.replace(/href="\/src\/styles\.css"/g, `href="${cssPath}"`);
+    result = result.replace(/src="\/src\/main\.js"/g, `src="${jsPath}"`);
+  }
+
+  // 초기 데이터 스크립트 주입 (Hydration을 위해)
+  if (initialData) {
+    const initialDataScript = `<script>window.__INITIAL_DATA__ = ${JSON.stringify(initialData)};</script>`;
+    // </body> 태그 앞에 스크립트 삽입
+    result = result.replace("</body>", `${initialDataScript}\n  </body>`);
+  }
+
+  return result;
+}
+
+/**
+ * SSR 렌더링 미들웨어
+ */
+async function ssrMiddleware(req, res, next) {
+  try {
+    const url = req.originalUrl.replace(base, "/") || "/";
+    const query = req.query;
+
+    // SSR 렌더링 (html과 initialData 반환)
+    const { html, initialData } = await render(url, query);
+
+    // HTML 템플릿 생성 및 응답 (initialData 포함)
+    const template = createHtmlTemplate(html, "", base, prod, assetFiles, initialData);
+    res.setHeader("Content-Type", "text/html");
+    res.send(template);
+  } catch (error) {
+    if (prod) {
+      console.error("SSR Error:", error.message);
+    } else {
+      console.error("SSR Error:", error);
+    }
+    next(error);
+  }
+}
+
+/**
+ * 에러 핸들링 미들웨어
+ */
+// eslint-disable-next-line no-unused-vars
+function errorMiddleware(err, req, res, next) {
+  if (prod) {
+    console.error("Server Error:", err.message);
+  } else {
+    console.error("Server Error:", err);
+  }
+
+  const errorMessage = prod ? "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요." : err.message;
+  const errorDetails = prod
+    ? ""
+    : `<pre style="text-align: left; margin-top: 20px; padding: 10px; background: #f5f5f5; border-radius: 4px; overflow-x: auto;">${err.stack}</pre>`;
+
+  res.status(500).send(`
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vanilla Javascript SSR</title>
-</head>
-<body>
-<div id="app">${render()}</div>
-</body>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Server Error</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-50">
+    <div class="min-h-screen flex items-center justify-center px-4">
+      <div class="max-w-md w-full bg-white rounded-lg shadow-lg p-6 text-center">
+        <div class="text-red-500 mb-4">
+          <svg class="mx-auto h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+          </svg>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-900 mb-2">서버 오류가 발생했습니다</h1>
+        <p class="text-gray-600 mb-4">${errorMessage}</p>
+        ${errorDetails}
+        <a href="${base}" class="inline-block mt-6 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+          홈으로 돌아가기
+        </a>
+      </div>
+    </div>
+  </body>
 </html>
-  `.trim(),
-  );
-});
+  `);
+}
 
-// Start http server
+// 압축 미들웨어
+app.use(compression());
+
+// 정적 파일 서빙 (빌드된 클라이언트 파일들)
+if (prod) {
+  app.use(base, sirv(join(__dirname, "dist/vanilla"), { gzip: true, maxAge: 31536000 }));
+} else {
+  // 개발 환경에서는 Vite가 정적 파일을 서빙하므로 여기서는 SSR만 처리
+  // 개발 환경에서는 소스맵 등 디버깅 정보 제공
+  app.use((req, res, next) => {
+    if (req.path.startsWith("/assets/")) {
+      console.log(`[DEV] Asset request: ${req.path}`);
+    }
+    next();
+  });
+}
+
+// SSR 렌더링 미들웨어
+app.use("*", ssrMiddleware);
+
+// 에러 핸들링 미들웨어
+app.use(errorMiddleware);
+
+// 서버 시작
 app.listen(port, () => {
-  console.log(`React Server started at http://localhost:${port}`);
+  console.log("=".repeat(50));
+  console.log(`🚀 Vanilla SSR Server started`);
+  console.log(`📍 URL: http://localhost:${port}`);
+  console.log(`📂 Base path: ${base}`);
+  console.log(`🌍 Environment: ${prod ? "production" : "development"}`);
+  if (prod) {
+    console.log(`📦 Assets: ${assetFiles.js}, ${assetFiles.css}`);
+  }
+  console.log("=".repeat(50));
 });
