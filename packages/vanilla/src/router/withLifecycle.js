@@ -31,8 +31,10 @@ const mount = (page) => {
   const lifecycle = getPageLifecycle(page);
   if (lifecycle.mounted) return;
 
-  // 마운트 콜백들 실행
-  lifecycle.mount?.();
+  // 마운트 콜백들 실행 (클라이언트에서만)
+  if (typeof window !== "undefined") {
+    lifecycle.mount?.();
+  }
   lifecycle.mounted = true;
   lifecycle.deps = [];
 };
@@ -64,6 +66,7 @@ export const withLifecycle = ({ onMount, onUnmount, watches } = {}, page) => {
 
   return (...args) => {
     const wasNewPage = pageState.current !== page;
+    const isServer = typeof window === "undefined";
 
     // 이전 페이지 언마운트
     if (pageState.current && wasNewPage) {
@@ -74,20 +77,21 @@ export const withLifecycle = ({ onMount, onUnmount, watches } = {}, page) => {
     pageState.previous = pageState.current;
     pageState.current = page;
 
-    // 새 페이지면 마운트, 기존 페이지면 업데이트
-    if (wasNewPage) {
-      mount(page);
-    } else if (lifecycle.watches) {
-      lifecycle.watches.forEach(([getDeps, callback], index) => {
-        const newDeps = getDeps();
+    if (!isServer) {
+      if (wasNewPage) {
+        mount(page);
+      } else if (lifecycle.watches) {
+        lifecycle.watches.forEach(([getDeps, callback], index) => {
+          const newDeps = getDeps();
 
-        if (depsChanged(newDeps, lifecycle.deps[index])) {
-          callback();
-        }
+          if (depsChanged(newDeps, lifecycle.deps[index])) {
+            callback();
+          }
 
-        // deps 업데이트 (이 부분이 중요!)
-        lifecycle.deps[index] = Array.isArray(newDeps) ? [...newDeps] : [];
-      });
+          // deps 업데이트 (이 부분이 중요!)
+          lifecycle.deps[index] = Array.isArray(newDeps) ? [...newDeps] : [];
+        });
+      }
     }
 
     // 페이지 함수 실행
