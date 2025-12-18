@@ -3,21 +3,33 @@
  */
 import { createObserver } from "./createObserver.js";
 
+const isServer = typeof window === "undefined";
+
 export class Router {
   #routes;
   #route;
   #observer = createObserver();
   #baseUrl;
+  #currentUrl = "/"; // SSR용: 현재 URL 저장
+  #currentSearch = "";
 
   constructor(baseUrl = "") {
     this.#routes = new Map();
     this.#route = null;
     this.#baseUrl = baseUrl.replace(/\/$/, "");
 
-    window.addEventListener("popstate", () => {
-      this.#route = this.#findRoute();
-      this.#observer.notify();
-    });
+    if (!isServer) {
+      window.addEventListener("popstate", () => {
+        this.#route = this.#findRoute();
+        this.#observer.notify();
+      });
+    }
+  }
+
+  // SSR에서 URL 설정용 메서드
+  setServerUrl(url, search = "") {
+    this.#currentUrl = url;
+    this.#currentSearch = search;
   }
 
   get baseUrl() {
@@ -25,7 +37,8 @@ export class Router {
   }
 
   get query() {
-    return Router.parseQuery(window.location.search);
+    const search = isServer ? this.#currentSearch : window.location.search;
+    return Router.parseQuery(search);
   }
 
   set query(newQuery) {
@@ -73,10 +86,13 @@ export class Router {
     });
   }
 
-  #findRoute(url = window.location.pathname) {
-    const { pathname } = new URL(url, window.location.origin);
+  #findRoute(url = "") {
+    const pathname = url || (isServer ? this.#currentUrl : window.location.pathname);
+    const origin = isServer ? "http://localhost" : window.location.origin;
+    const { pathname: normalizedPath } = new URL(pathname, origin);
+
     for (const [routePath, route] of this.#routes) {
-      const match = pathname.match(route.regex);
+      const match = normalizedPath.match(route.regex);
       if (match) {
         // 매치된 파라미터들을 객체로 변환
         const params = {};
@@ -99,12 +115,17 @@ export class Router {
    * @param {string} url - 이동할 경로
    */
   push(url) {
+    if (isServer) return;
     try {
       // baseUrl이 없으면 자동으로 붙여줌
-      let fullUrl = url.startsWith(this.#baseUrl) ? url : this.#baseUrl + (url.startsWith("/") ? url : "/" + url);
+      const normalizedUrl = url.startsWith(this.#baseUrl)
+        ? url
+        : this.#baseUrl + (url.startsWith("/") ? url : "/" + url);
+
+      const { pathname: normalizedPath, search: normalizedSearch } = new URL(normalizedUrl, window.location.origin);
 
       const prevFullUrl = `${window.location.pathname}${window.location.search}`;
-
+      const fullUrl = `${normalizedPath}${normalizedSearch}`;
       // 히스토리 업데이트
       if (prevFullUrl !== fullUrl) {
         window.history.pushState(null, "", fullUrl);
@@ -130,11 +151,18 @@ export class Router {
    * @param {string} search - location.search 또는 쿼리 문자열
    * @returns {Object} 파싱된 쿼리 객체
    */
-  static parseQuery = (search = window.location.search) => {
-    const params = new URLSearchParams(search);
+  static parseQuery = (search = "") => {
+    if (!search && !isServer) {
+      search = window.location.search;
+    }
+
+    const origin = isServer ? "http://localhost" : window.location.origin;
+
+    const { search: normalizedSearch } = new URL(search, origin);
+    const params = new URLSearchParams(normalizedSearch);
     const query = {};
     for (const [key, value] of params) {
-      query[key] = value;
+      query[key] = decodeURIComponent(value);
     }
     return query;
   };
@@ -155,6 +183,8 @@ export class Router {
   };
 
   static getUrl = (newQuery, baseUrl = "") => {
+    if (isServer) return ""; // 또는 적절한 처리
+
     const currentQuery = Router.parseQuery();
     const updatedQuery = { ...currentQuery, ...newQuery };
 
@@ -168,4 +198,10 @@ export class Router {
     const queryString = Router.stringifyQuery(updatedQuery);
     return `${baseUrl}${window.location.pathname.replace(baseUrl, "")}${queryString ? `?${queryString}` : ""}`;
   };
+
+  // Router.js에 추가
+  matchRoute(url) {
+    this.#route = this.#findRoute(url);
+    return this.#route;
+  }
 }
