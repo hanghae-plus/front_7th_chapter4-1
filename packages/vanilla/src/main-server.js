@@ -701,8 +701,8 @@ export async function render(url) {
 
     initialData = {
       products: productsData.products,
-      totalCount: productsData.pagination.total,
       categories,
+      totalCount: productsData.pagination.total,
     };
   } else if (routePath === "/product/:id/") {
     // 상품 상세 페이지
@@ -746,10 +746,8 @@ export async function render(url) {
   let head = "";
 
   if (routePath === "/") {
-    head = `
-      <title>쇼핑몰 - 상품 목록</title>
-      <meta name="description" content="다양한 상품을 만나보세요">
-    `;
+    head = `<title>쇼핑몰 - 홈</title>
+      <meta name="description" content="다양한 상품을 만나보세요">`;
   } else if (routePath === "/product/:id/") {
     const product = stores.productStore.getState().currentProduct;
     if (product) {
