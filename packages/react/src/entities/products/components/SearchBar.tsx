@@ -123,6 +123,7 @@ export function SearchBar() {
           <input
             type="text"
             id="search-input"
+            key={`search-${searchQuery ?? ""}`}
             placeholder="상품명을 검색해보세요..."
             defaultValue={searchQuery}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg
@@ -230,6 +231,7 @@ export function SearchBar() {
             </label>
             <select
               id="limit-select"
+              key={`limit-${limit ?? "20"}`}
               className="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
               onChange={handleLimitChange}
               defaultValue={Number(limit)}
@@ -245,6 +247,7 @@ export function SearchBar() {
             </label>
             <select
               id="sort-select"
+              key={`sort-${sort ?? "price_asc"}`}
               className="text-sm border border-gray-300 rounded px-2 py-1
                            focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
               onChange={handleSortChange}

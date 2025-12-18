@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { loadNextProducts, loadProductsAndCategories, ProductList, SearchBar } from "../entities";
+import { useEffect, useRef } from "react";
+import { loadNextProducts, loadProductsAndCategories, ProductList, SearchBar, useProductStore } from "../entities";
 import { PageWrapper } from "./PageWrapper";
 
 const headerLeft = (
@@ -27,9 +27,18 @@ const unregisterScrollHandler = () => {
 };
 
 export const HomePage = () => {
+  const { products, status } = useProductStore();
+  const initialLoadDone = useRef(false);
+
   useEffect(() => {
     registerScrollHandler();
-    loadProductsAndCategories();
+
+    // 서버에서 이미 데이터를 로드했다면 API 호출 스킵
+    const hasServerData = products.length > 0 && status === "done";
+    if (!hasServerData && !initialLoadDone.current) {
+      loadProductsAndCategories();
+    }
+    initialLoadDone.current = true;
 
     return unregisterScrollHandler;
   }, []);

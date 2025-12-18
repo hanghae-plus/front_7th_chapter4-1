@@ -8,7 +8,10 @@ const createErrorMessage = (error: unknown, defaultMessage = "알 수 없는 오
   error instanceof Error ? error.message : defaultMessage;
 
 export const loadProductsAndCategories = async () => {
-  router.query = { current: undefined }; // 항상 첫 페이지로 초기화
+  // 기존 쿼리 파라미터를 유지하면서 current만 리셋
+  const currentQuery = router.query;
+  const queryWithReset = { ...currentQuery, current: undefined };
+
   productStore.dispatch({
     type: PRODUCT_ACTIONS.SETUP,
     payload: {
@@ -25,7 +28,7 @@ export const loadProductsAndCategories = async () => {
         pagination: { total },
       },
       categories,
-    ] = await Promise.all([getProducts(router.query), getCategories()]);
+    ] = await Promise.all([getProducts(queryWithReset), getCategories()]);
 
     // 페이지 리셋이면 새로 설정, 아니면 기존에 추가
     productStore.dispatch({
@@ -101,6 +104,8 @@ export const setSort = (sort: string) => {
 export const setLimit = (limit: number) => {
   router.query = { limit, current: 1 };
 };
+
+// deprecated: 새로운 구현은 router의 query setter가 기존 쿼리를 merge함
 
 export const loadProductDetailForPage = async (productId: string) => {
   try {
