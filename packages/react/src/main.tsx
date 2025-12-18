@@ -1,7 +1,7 @@
 import { App } from "./App";
 import { router } from "./router";
 import { BASE_URL } from "./constants.ts";
-import { createRoot } from "react-dom/client";
+import { hydrateRoot } from "react-dom/client";
 import { productStore, PRODUCT_ACTIONS, initialProductState } from "./entities/products/productStore";
 
 // 타입 정의
@@ -56,7 +56,7 @@ function main() {
   router.start();
 
   const rootElement = document.getElementById("root")!;
-  createRoot(rootElement).render(<App />);
+  hydrateRoot(rootElement, <App />);
 }
 
 // 애플리케이션 시작
