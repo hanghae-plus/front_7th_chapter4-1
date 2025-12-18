@@ -3,6 +3,7 @@ import { productStore } from "../stores";
 import { router, withLifecycle } from "../router";
 import { loadProducts, loadProductsAndCategories } from "../services";
 import { PageWrapper } from "./PageWrapper.js";
+import { getServerQuery } from "../lib/serverQueryContext.js";
 
 export const HomePage = withLifecycle(
   {
@@ -19,7 +20,16 @@ export const HomePage = withLifecycle(
   },
   () => {
     const productState = productStore.getState();
-    const { search: searchQuery, limit, sort, category1, category2 } = router.query;
+    // 서버 환경에서는 router.query 사용 불가, serverQueryContext에서 쿼리 가져오기
+    let query = {};
+    if (typeof window !== "undefined") {
+      // 클라이언트: router.query 사용
+      query = router.query;
+    } else {
+      // 서버: serverQueryContext에서 쿼리 가져오기
+      query = getServerQuery();
+    }
+    const { search: searchQuery = "", limit, sort, category1, category2 } = query;
     const { products, loading, error, totalCount, categories } = productState;
     const category = { category1, category2 };
     const hasMore = products.length < totalCount;

@@ -28,6 +28,11 @@ const depsChanged = (newDeps, oldDeps) => {
 
 // 페이지 마운트 처리
 const mount = (page) => {
+  // 서버 환경에서는 마운트 콜백 실행하지 않음
+  if (typeof window === "undefined") {
+    return;
+  }
+
   const lifecycle = getPageLifecycle(page);
   if (lifecycle.mounted) return;
 
@@ -63,6 +68,11 @@ export const withLifecycle = ({ onMount, onUnmount, watches } = {}, page) => {
   }
 
   return (...args) => {
+    // 서버 환경에서는 생명주기 없이 바로 페이지 함수 실행
+    if (typeof window === "undefined") {
+      return page(...args);
+    }
+
     const wasNewPage = pageState.current !== page;
 
     // 이전 페이지 언마운트
