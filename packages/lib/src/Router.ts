@@ -25,29 +25,36 @@ export class Router<Handler extends (...args: any[]) => any> {
     this.#route = null;
     this.#baseUrl = baseUrl.replace(/\/$/, "");
 
-    window.addEventListener("popstate", () => {
-      this.#route = this.#findRoute();
-      this.#observer.notify();
-    });
+    // SSR 환경에서는 브라우저 API를 사용하지 않음
+    if (typeof window !== "undefined") {
+      window.addEventListener("popstate", () => {
+        this.#route = this.#findRoute();
+        this.#observer.notify();
+      });
 
-    document.addEventListener("click", (e) => {
-      const target = e.target as HTMLElement;
-      if (!target?.closest("[data-link]")) {
-        return;
-      }
-      e.preventDefault();
-      const url = target.getAttribute("href") ?? target.closest("[data-link]")?.getAttribute("href");
-      if (url) {
-        this.push(url);
-      }
-    });
+      document.addEventListener("click", (e) => {
+        const target = e.target as HTMLElement;
+        if (!target?.closest("[data-link]")) {
+          return;
+        }
+        e.preventDefault();
+        const url = target.getAttribute("href") ?? target.closest("[data-link]")?.getAttribute("href");
+        if (url) {
+          this.push(url);
+        }
+      });
+    }
   }
 
   get query(): StringRecord {
+    // SSR 환경에서는 빈 객체 반환
+    if (typeof window === "undefined") return {};
     return Router.parseQuery(window.location.search);
   }
 
   set query(newQuery: QueryPayload) {
+    // SSR 환경에서는 무시
+    if (typeof window === "undefined") return;
     const newUrl = Router.getUrl(newQuery, this.#baseUrl);
     this.push(newUrl);
   }
@@ -85,8 +92,12 @@ export class Router<Handler extends (...args: any[]) => any> {
     });
   }
 
-  #findRoute(url = window.location.pathname) {
-    const { pathname } = new URL(url, window.location.origin);
+  #findRoute(url?: string) {
+    // SSR 환경에서는 null 반환
+    if (typeof window === "undefined") return null;
+
+    const targetUrl = url ?? window.location.pathname;
+    const { pathname } = new URL(targetUrl, window.location.origin);
     for (const [routePath, route] of this.#routes) {
       const match = pathname.match(route.regex);
       if (match) {
@@ -107,6 +118,9 @@ export class Router<Handler extends (...args: any[]) => any> {
   }
 
   push(url: string) {
+    // SSR 환경에서는 무시
+    if (typeof window === "undefined") return;
+
     try {
       // baseUrl이 없으면 자동으로 붙여줌
       const fullUrl = url.startsWith(this.#baseUrl) ? url : this.#baseUrl + (url.startsWith("/") ? url : "/" + url);
@@ -126,12 +140,17 @@ export class Router<Handler extends (...args: any[]) => any> {
   }
 
   start() {
+    // SSR 환경에서는 무시
+    if (typeof window === "undefined") return;
+
     this.#route = this.#findRoute();
     this.#observer.notify();
   }
 
-  static parseQuery = (search = window.location.search) => {
-    const params = new URLSearchParams(search);
+  static parseQuery = (search?: string) => {
+    // SSR 환경에서는 빈 객체 반환
+    const searchStr = search ?? (typeof window !== "undefined" ? window.location.search : "");
+    const params = new URLSearchParams(searchStr);
     const query: StringRecord = {};
     for (const [key, value] of params) {
       query[key] = value;
@@ -150,6 +169,9 @@ export class Router<Handler extends (...args: any[]) => any> {
   };
 
   static getUrl = (newQuery: QueryPayload, baseUrl = "") => {
+    // SSR 환경에서는 빈 문자열 반환
+    if (typeof window === "undefined") return "";
+
     const currentQuery = Router.parseQuery();
     const updatedQuery = { ...currentQuery, ...newQuery };
 

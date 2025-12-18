@@ -1,15 +1,23 @@
 import { getCategories, getProduct, getProducts } from "../../api/productApi";
 import { router } from "../../router";
 import type { StringRecord } from "../../types";
-import { initialProductState, PRODUCT_ACTIONS, productStore } from "./productStore";
+import { initialProductState, PRODUCT_ACTIONS, productStore, getActiveStore } from "./productStore";
 import { isNearBottom } from "../../utils";
 
 const createErrorMessage = (error: unknown, defaultMessage = "알 수 없는 오류 발생") =>
   error instanceof Error ? error.message : defaultMessage;
 
 export const loadProductsAndCategories = async () => {
+  const store = getActiveStore();
+  const state = store.getState();
+
+  // SSR에서 이미 데이터를 프리페칭한 경우 스킵
+  if (state.products.length > 0 && state.status === "done") {
+    return;
+  }
+
   router.query = { current: undefined }; // 항상 첫 페이지로 초기화
-  productStore.dispatch({
+  store.dispatch({
     type: PRODUCT_ACTIONS.SETUP,
     payload: {
       ...initialProductState,
@@ -28,7 +36,7 @@ export const loadProductsAndCategories = async () => {
     ] = await Promise.all([getProducts(router.query), getCategories()]);
 
     // 페이지 리셋이면 새로 설정, 아니면 기존에 추가
-    productStore.dispatch({
+    store.dispatch({
       type: PRODUCT_ACTIONS.SETUP,
       payload: {
         products,
@@ -39,7 +47,7 @@ export const loadProductsAndCategories = async () => {
       },
     });
   } catch (error: unknown) {
-    productStore.dispatch({
+    store.dispatch({
       type: PRODUCT_ACTIONS.SET_ERROR,
       payload: createErrorMessage(error),
     });
@@ -103,8 +111,17 @@ export const setLimit = (limit: number) => {
 };
 
 export const loadProductDetailForPage = async (productId: string) => {
+  const store = getActiveStore();
+
   try {
-    const currentProduct = productStore.getState().currentProduct;
+    const state = store.getState();
+    const currentProduct = state.currentProduct;
+
+    // SSR에서 이미 해당 상품이 로드된 경우 스킵
+    if (currentProduct?.productId === productId && state.status === "done") {
+      return;
+    }
+
     if (productId === currentProduct?.productId) {
       // 관련 상품 로드 (같은 category2 기준)
       if (currentProduct.category2) {
@@ -113,7 +130,7 @@ export const loadProductDetailForPage = async (productId: string) => {
       return;
     }
     // 현재 상품 클리어
-    productStore.dispatch({
+    store.dispatch({
       type: PRODUCT_ACTIONS.SETUP,
       payload: {
         ...initialProductState,
@@ -126,7 +143,7 @@ export const loadProductDetailForPage = async (productId: string) => {
     const product = await getProduct(productId);
 
     // 현재 상품 설정
-    productStore.dispatch({
+    store.dispatch({
       type: PRODUCT_ACTIONS.SET_CURRENT_PRODUCT,
       payload: product,
     });
@@ -137,7 +154,7 @@ export const loadProductDetailForPage = async (productId: string) => {
     }
   } catch (error) {
     console.error("상품 상세 페이지 로드 실패:", error);
-    productStore.dispatch({
+    store.dispatch({
       type: PRODUCT_ACTIONS.SET_ERROR,
       payload: createErrorMessage(error),
     });

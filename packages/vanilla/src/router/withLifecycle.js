@@ -63,6 +63,11 @@ export const withLifecycle = ({ onMount, onUnmount, watches } = {}, page) => {
   }
 
   return (...args) => {
+    // SSR 환경에서는 lifecycle 처리 없이 렌더링만 수행
+    if (typeof window === "undefined") {
+      return page(...args);
+    }
+
     const wasNewPage = pageState.current !== page;
 
     // 이전 페이지 언마운트

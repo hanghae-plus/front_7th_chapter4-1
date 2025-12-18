@@ -1,6 +1,19 @@
 import { createObserver } from "./createObserver.ts";
 
-export const createStorage = <T>(key: string, storage = window.localStorage) => {
+// SSR 환경을 위한 더미 스토리지
+const dummyStorage: Storage = {
+  length: 0,
+  clear: () => {},
+  getItem: () => null,
+  key: () => null,
+  removeItem: () => {},
+  setItem: () => {},
+};
+
+// SSR 환경에서는 localStorage가 없으므로 더미 스토리지 사용
+const getDefaultStorage = () => (typeof window !== "undefined" ? window.localStorage : dummyStorage);
+
+export const createStorage = <T>(key: string, storage = getDefaultStorage()) => {
   let data: T | null = JSON.parse(storage.getItem(key) ?? "null");
   const { subscribe, notify } = createObserver();
 

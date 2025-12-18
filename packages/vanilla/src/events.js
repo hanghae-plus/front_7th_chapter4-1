@@ -16,7 +16,7 @@ import {
   toggleCartSelect,
   updateCartQuantity,
 } from "./services";
-import { productStore, uiStore, UI_ACTIONS } from "./stores";
+import { getActiveStore, uiStore, UI_ACTIONS } from "./stores";
 
 /**
  * 상품 관련 이벤트 등록
@@ -182,7 +182,7 @@ export function registerProductDetailEvents() {
   });
 
   addEvent("click", ".go-to-product-list", async () => {
-    const product = productStore.getState().currentProduct;
+    const product = getActiveStore().getState().currentProduct;
     const query = {
       category1: product?.category1,
       category2: product?.category2,
@@ -216,7 +216,7 @@ export function registerProductDetailEvents() {
 
     if (!productId) return;
 
-    const productState = productStore.getState();
+    const productState = getActiveStore().getState();
     const product = productState.currentProduct;
 
     if (product) {
@@ -235,7 +235,7 @@ export function registerCartEvents() {
     if (!productId) return;
 
     // 상품 정보 찾기
-    const productState = productStore.getState();
+    const productState = getActiveStore().getState();
     const product = productState.products.find((p) => p.productId === productId);
 
     if (product) {
@@ -377,7 +377,7 @@ export function registerScrollEvents() {
     }
 
     if (isNearBottom(200)) {
-      const productState = productStore.getState();
+      const productState = getActiveStore().getState();
       const hasMore = productState.products.length < productState.totalCount;
 
       // 로딩 중이거나 더 이상 로드할 데이터가 없으면 return
