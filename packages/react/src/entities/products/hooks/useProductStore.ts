@@ -10,8 +10,10 @@ export const useProductStore = () => {
   const getServerSnapshot = () => productStore.getState();
 
   // Hook은 항상 호출해야 함 (조건부 호출 불가)
+  // useSyncExternalStore는 항상 호출하고, Context가 있으면 Context를 우선 사용
   const storeData = useSyncExternalStore(productStore.subscribe, () => productStore.getState(), getServerSnapshot);
 
-  // Context가 있으면 Context 사용, 없으면 store 사용
-  return contextData ?? storeData;
+  // Context가 있으면 바로 반환 (SSR에서 Context 데이터 우선 사용)
+  // 클라이언트에서는 Context가 없을 때 store 데이터 사용
+  return contextData || storeData;
 };
