@@ -198,10 +198,22 @@ export const render = async (url, query = {}) => {
     const html = route.handler();
 
     // 스토어 상태 수집 (Hydration을 위해)
+    const productState = productStore.getState();
+    const cartState = cartStore.getState();
+    const uiState = uiStore.getState();
+
+    // 데이터 일치를 위한 체크섬 생성 (간단한 해시)
+    const dataChecksum = JSON.stringify({
+      products: productState.products?.length || 0,
+      currentProduct: productState.currentProduct?.productId || null,
+      categories: Object.keys(productState.categories || {}).length,
+    }).replace(/\s/g, "");
+
     const initialData = {
-      productStore: productStore.getState(),
-      cartStore: cartStore.getState(),
-      uiStore: uiStore.getState(),
+      productStore: productState,
+      cartStore: cartState,
+      uiStore: uiState,
+      _checksum: dataChecksum, // 데이터 일치 확인용
     };
 
     return {

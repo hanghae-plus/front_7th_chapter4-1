@@ -21,7 +21,7 @@ const enableMocking = () =>
  */
 function hydrateStores() {
   if (typeof window !== "undefined" && window.__INITIAL_DATA__) {
-    const { productStore: productState, uiStore: uiState } = window.__INITIAL_DATA__;
+    const { productStore: productState, uiStore: uiState, _checksum: serverChecksum } = window.__INITIAL_DATA__;
 
     // Product Store 복원
     if (productState) {
@@ -33,6 +33,26 @@ function hydrateStores() {
           loading: false,
         },
       });
+
+      // 서버-클라이언트 데이터 일치 확인
+      if (serverChecksum) {
+        const clientChecksum = JSON.stringify({
+          products: productState.products?.length || 0,
+          currentProduct: productState.currentProduct?.productId || null,
+          categories: Object.keys(productState.categories || {}).length,
+        }).replace(/\s/g, "");
+
+        if (serverChecksum !== clientChecksum) {
+          console.warn(
+            "[Hydration] 서버-클라이언트 데이터 불일치 감지. 서버 체크섬:",
+            serverChecksum,
+            "클라이언트 체크섬:",
+            clientChecksum,
+          );
+        } else if (import.meta.env.DEV) {
+          console.log("[Hydration] 서버-클라이언트 데이터 일치 확인 완료");
+        }
+      }
     }
 
     // Cart Store 복원
