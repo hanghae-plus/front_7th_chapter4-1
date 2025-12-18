@@ -14,10 +14,13 @@ export class Router {
     this.#route = null;
     this.#baseUrl = baseUrl.replace(/\/$/, "");
 
-    window.addEventListener("popstate", () => {
-      this.#route = this.#findRoute();
-      this.#observer.notify();
-    });
+    // 서버 환경에서는 window 이벤트 리스너 등록하지 않음
+    if (typeof window !== "undefined") {
+      window.addEventListener("popstate", () => {
+        this.#route = this.#findRoute();
+        this.#observer.notify();
+      });
+    }
   }
 
   get baseUrl() {
@@ -25,6 +28,10 @@ export class Router {
   }
 
   get query() {
+    // 서버 환경에서는 빈 객체 반환
+    if (typeof window === "undefined") {
+      return {};
+    }
     return Router.parseQuery(window.location.search);
   }
 
@@ -34,6 +41,10 @@ export class Router {
   }
 
   get params() {
+    // 서버 환경에서는 빈 객체 반환
+    if (typeof window === "undefined") {
+      return {};
+    }
     return this.#route?.params ?? {};
   }
 
@@ -73,7 +84,26 @@ export class Router {
     });
   }
 
-  #findRoute(url = window.location.pathname) {
+  #findRoute(url = typeof window !== "undefined" ? window.location.pathname : "/") {
+    // 서버 환경에서는 url 파라미터 사용
+    if (typeof window === "undefined") {
+      const pathname = url.split("?")[0];
+      for (const [routePath, route] of this.#routes) {
+        const match = pathname.match(route.regex);
+        if (match) {
+          const params = {};
+          route.paramNames.forEach((name, index) => {
+            params[name] = match[index + 1];
+          });
+          return {
+            ...route,
+            params,
+            path: routePath,
+          };
+        }
+      }
+      return null;
+    }
     const { pathname } = new URL(url, window.location.origin);
     for (const [routePath, route] of this.#routes) {
       const match = pathname.match(route.regex);
@@ -99,6 +129,11 @@ export class Router {
    * @param {string} url - 이동할 경로
    */
   push(url) {
+    // 서버 환경에서는 아무 작업도 하지 않음
+    if (typeof window === "undefined") {
+      return;
+    }
+
     try {
       // baseUrl이 없으면 자동으로 붙여줌
       let fullUrl = url.startsWith(this.#baseUrl) ? url : this.#baseUrl + (url.startsWith("/") ? url : "/" + url);
@@ -121,6 +156,10 @@ export class Router {
    * 라우터 시작
    */
   start() {
+    // 서버 환경에서는 아무 작업도 하지 않음
+    if (typeof window === "undefined") {
+      return;
+    }
     this.#route = this.#findRoute();
     this.#observer.notify();
   }
@@ -130,7 +169,7 @@ export class Router {
    * @param {string} search - location.search 또는 쿼리 문자열
    * @returns {Object} 파싱된 쿼리 객체
    */
-  static parseQuery = (search = window.location.search) => {
+  static parseQuery = (search = typeof window !== "undefined" ? window.location.search : "") => {
     const params = new URLSearchParams(search);
     const query = {};
     for (const [key, value] of params) {
@@ -155,6 +194,11 @@ export class Router {
   };
 
   static getUrl = (newQuery, baseUrl = "") => {
+    // 서버 환경에서는 빈 문자열 반환
+    if (typeof window === "undefined") {
+      return "";
+    }
+
     const currentQuery = Router.parseQuery();
     const updatedQuery = { ...currentQuery, ...newQuery };
 

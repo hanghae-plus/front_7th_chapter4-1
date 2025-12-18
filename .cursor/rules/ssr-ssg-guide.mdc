@@ -1,0 +1,153 @@
+---
+description: SSR/SSG 과제 진행 가이드 및 규칙
+globs: ["packages/vanilla/**", "packages/react/**", "mockdowns/**"]
+alwaysApply: false
+---
+
+# 🚀 SSR/SSG 과제 진행 규칙
+
+> 📎 **연동 규칙**:
+> - `global-rules.mdc` - 전역 규칙 (항상 적용)
+> - `agent-selector.mdc` - Agent 자동 선택
+
+---
+
+## 📋 과제 진행 방식
+
+사용자가 **"N번 하자"** 라고 말하면:
+1. 🎓 **Tutor Agent** 활성화
+2. 해당 스텝의 mockdown 문서 기반 가이드 제공
+3. 코드는 직접 작성하지 않고, 가이드만 제공
+4. 사용자가 작성한 코드를 검토하고 피드백
+
+---
+
+## 📁 스텝별 문서 위치
+
+```
+mockdowns/
+├── 00_overview.md           # 총합 문서
+├── basic/                   # 기본과제 (Vanilla)
+│   ├── 01_express-ssr-server.md
+│   ├── 02_server-side-rendering.md
+│   ├── 03_client-hydration.md
+│   └── 04_static-site-generation.md
+├── advanced/                # 심화과제 (React)
+│   ├── 05_react-ssr.md
+│   ├── 06_react-hydration.md
+│   └── 07_react-ssg.md
+└── qa/                      # Q&A 기록
+    └── qa_YYYY-MM-DD.md
+```
+
+---
+
+## 🎯 스텝 매핑
+
+| 사용자 입력 | 스텝 | 문서 | Agent |
+|------------|------|------|-------|
+| "1번 하자" | Express SSR 서버 | `basic/01_express-ssr-server.md` | 🎓 Tutor |
+| "2번 하자" | 서버 사이드 렌더링 | `basic/02_server-side-rendering.md` | 🎓 Tutor |
+| "3번 하자" | 클라이언트 Hydration | `basic/03_client-hydration.md` | 🎓 Tutor |
+| "4번 하자" | SSG (Vanilla) | `basic/04_static-site-generation.md` | 🎓 Tutor |
+| "5번 하자" | React SSR | `advanced/05_react-ssr.md` | 🎓 Tutor |
+| "6번 하자" | React Hydration | `advanced/06_react-hydration.md` | 🎓 Tutor |
+| "7번 하자" | React SSG | `advanced/07_react-ssg.md` | 🎓 Tutor |
+
+---
+
+## 🔍 코드 리뷰 시 확인사항
+
+> 🔍 **Reviewer Agent** 사용
+
+### 기본과제 체크포인트
+- [ ] Express 미들웨어 구조
+- [ ] 개발/프로덕션 환경 분기
+- [ ] HTML 템플릿 치환 (`<!--app-html-->`, `<!--app-head-->`)
+- [ ] 서버 Router 구현
+- [ ] 데이터 프리페칭
+- [ ] `window.__INITIAL_DATA__` 주입
+- [ ] Hydration 로직
+- [ ] SSG 스크립트
+
+### 심화과제 체크포인트
+- [ ] `renderToString` 사용
+- [ ] Universal Router
+- [ ] TypeScript 빌드
+- [ ] `hydrateRoot` 사용
+- [ ] Hydration 불일치 방지
+- [ ] React SSG 스크립트
+
+---
+
+## ⚠️ 환경 관련 주의사항
+
+### Windows 환경
+- 환경변수: `cross-env` 사용 필수
+- 경로: `/` 대신 `path.join()` 사용
+- 줄바꿈: `.prettierrc`에 `"endOfLine": "auto"` 설정
+
+### 테스트 실행
+- Playwright: 파일 경로 직접 지정 권장
+- 예: `playwright test e2e/e2e-basic.spec.ts`
+
+---
+
+## 📖 Q&A 기록 규칙
+
+> ❓ **Q&A Agent** 담당
+
+### 기록 대상
+사용자가 과제 진행 중 **질문**을 하면 해당 내용을 기록
+
+### 파일 위치
+```
+mockdowns/qa/qa_YYYY-MM-DD.md
+```
+
+### 기록할 질문 유형
+- ❓ 개념 질문 (SSR, Hydration 등)
+- 🐛 에러 해결 질문
+- 🤔 "왜?" 질문 (원인 파악)
+- 💡 구현 방법 질문
+
+### 참고 유도 규칙
+- 유사한 질문이나 관련 내용이 나오면 **기존 Q&A 참고 유도**
+- 예시: "💡 이전에 비슷한 질문이 있었어요! `mockdowns/qa/qa_2025-12-17.md` 참고하세요."
+
+---
+
+## 🚨 코드 수정 규칙
+
+> 💻 **Coder Agent** 담당
+> ⚠️ 상세 규칙은 `global-rules.mdc` 참조
+
+### 핵심 규칙 요약
+1. ❌ **테스트 코드 수정 금지**
+2. 🔒 **원본 기능 왜곡 금지**
+3. ✂️ **최소한의 기능 구현**
+4. 📚 **기존 코드 참고 필수**
+5. 🔍 **사전 에러 파악 필수**
+6. ⏰ **장시간 작업 시 경고**
+7. ❓ **애매한 부분은 질문**
+
+---
+
+## 🎯 이 프로젝트 핵심 정보
+
+### 과제 목표
+> FE 개발자가 **"웹 렌더링 전체 흐름을 이해했는지"** 확인
+
+### 핵심 질문 3가지
+1. 서버는 어디까지 책임지는가?
+2. 클라이언트는 어디서부터 이어받는가?
+3. 데이터는 어떻게 공유되는가?
+
+### 진행 순서
+```
+STEP 01 → 02 → 03 → 04 (기본과제)
+    ↓
+STEP 05 → 06 → 07 (심화과제)
+```
+
+> 💡 **SSR이 먼저, SSG는 SSR 구조를 활용한 확장**
