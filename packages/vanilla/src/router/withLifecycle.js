@@ -49,6 +49,10 @@ const unmount = (pageFunction) => {
 };
 
 export const withLifecycle = ({ onMount, onUnmount, watches } = {}, page) => {
+  if (typeof window === "undefined") {
+    return page;
+  }
+
   const lifecycle = getPageLifecycle(page);
   if (typeof onMount === "function") {
     lifecycle.mount = onMount;

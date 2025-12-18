@@ -1,12 +1,12 @@
-import { cartStore, productStore, uiStore } from "./stores";
-import { router } from "./router";
-import { HomePage, NotFoundPage, ProductDetailPage } from "./pages";
-import { withBatch } from "./utils";
+import { cartStore, productStore, uiStore } from "./stores/index.js";
+import { router } from "./router/index.js";
+import { HomePage, ProductDetailPage, NotFoundPage } from "./pages/index.js";
+import { withBatch } from "./utils/index.js";
 
 // 홈 페이지 (상품 목록)
 router.addRoute("/", HomePage);
 router.addRoute("/product/:id/", ProductDetailPage);
-router.addRoute(".*", NotFoundPage);
+//router.addRoute(".*", NotFoundPage);
 
 /**
  * 전체 애플리케이션 렌더링
@@ -15,7 +15,7 @@ export const render = withBatch(() => {
   const rootElement = document.getElementById("root");
   if (!rootElement) return;
 
-  const PageComponent = router.target;
+  const PageComponent = router.target || NotFoundPage;
 
   // App 컴포넌트 렌더링
   rootElement.innerHTML = PageComponent();
