@@ -46,7 +46,7 @@ async function prefetchData(routeInfo, params, query) {
   return {};
 }
 
-function generateHead(routeInfo, query, data) {
+function generateHead(routeInfo, data) {
   const product = routeInfo?.path === "/product/:id/" ? data.currentProduct : null;
   const title = generateTitle(routeInfo, product);
   return `<title>${title}</title>`;
@@ -76,7 +76,7 @@ export async function render(url, query = {}) {
   delete global.__SSR_DATA__;
   delete global.router;
 
-  const head = generateHead(routeInfo, query, storeData);
+  const head = generateHead(routeInfo, storeData);
 
   let initialData;
 
