@@ -1,5 +1,4 @@
 import { createStore } from "@hanghae-plus/lib";
-import type { Categories, Product } from "./types";
 
 export const PRODUCT_ACTIONS = {
   // 상품 목록
@@ -28,20 +27,19 @@ export const PRODUCT_ACTIONS = {
  */
 export const initialProductState = {
   // 상품 목록
-  products: [] as Product[],
+  products: [],
+  // 카테고리 목록
+  categories: {},
   totalCount: 0,
 
   // 상품 상세
-  currentProduct: null as Product | null,
-  relatedProducts: [] as Product[],
+  currentProduct: null,
+  relatedProducts: [],
 
   // 로딩 및 에러 상태
   loading: true,
-  error: null as string | null,
+  error: null,
   status: "idle",
-
-  // 카테고리 목록
-  categories: {} as Categories,
 };
 
 /**

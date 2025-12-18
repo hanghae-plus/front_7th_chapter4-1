@@ -22,10 +22,10 @@ if (!prod) {
   const compression = (await import("compression")).default;
   const sirv = (await import("sirv")).default;
 
-  templateHtml = await fs.readFile("./dist/client/index.html", "utf-8");
+  templateHtml = await fs.readFile("./dist/react/index.html", "utf-8");
 
   app.use(compression());
-  app.use(base, sirv("./dist/client", { extensions: [] }));
+  app.use(base, sirv("./dist/react", { extensions: [] }));
 }
 
 app.use("*all", async (req, res) => {
@@ -41,18 +41,18 @@ app.use("*all", async (req, res) => {
       render = (await vite.ssrLoadModule("/src/main-server.tsx")).render;
     } else {
       template = templateHtml;
-      render = (await import("./dist/server/main-server.js")).render;
+      render = (await import("./dist/react-ssr/main-server.js")).render;
     }
 
     const { html: appHtml, head, state } = await render(url);
 
     let html = template.replace(`<!--app-head-->`, head ?? "").replace(`<!--app-html-->`, appHtml ?? "");
 
-    const stateScript = state
-      ? `<script>window.__INITIAL_DATA__ = ${JSON.stringify(state).replace(/</g, "\\u003c")}</script>`
-      : "";
-
-    html = html.replace(`<!--app-context-->`, stateScript);
+    // __INITIAL_DATA__ 스크립트를 </body> 앞에 주입
+    if (state) {
+      const stateScript = `<script>window.__INITIAL_DATA__ = ${JSON.stringify(state).replace(/</g, "\\u003c")}</script>`;
+      html = html.replace(`</body>`, `${stateScript}</body>`);
+    }
 
     res.status(200).set({ "Content-Type": "text/html" }).send(html);
   } catch (e) {

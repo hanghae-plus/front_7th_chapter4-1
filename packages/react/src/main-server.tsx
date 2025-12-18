@@ -3,7 +3,6 @@ import React, { createElement } from "react";
 import items from "./mocks/items.json";
 import { initialProductState } from "./entities/products/productStore";
 import { ProductStoreContext } from "./entities/products/ProductStoreContext";
-import { ModalProvider, ToastProvider } from "./components";
 import { HomePage } from "./pages/HomePage";
 import { ProductDetailPage } from "./pages/ProductDetailPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
@@ -193,16 +192,13 @@ export const render = async (url: string) => {
 
   // 4. Context Provider로 데이터 주입하여 컴포넌트 렌더링
   // 서버에서는 라우트 매칭 결과로 페이지 컴포넌트를 직접 렌더링
+  // SSR에서는 ToastProvider, ModalProvider 제외 (클라이언트에서만 사용)
   let html: string;
   let head: string;
 
-  // Context Provider와 Provider들로 감싸는 헬퍼 함수
+  // Context Provider로만 감싸는 헬퍼 함수 (SSR용)
   const wrapWithProviders = (PageComponent: React.ComponentType<Record<string, never>>) =>
-    createElement(
-      ProductStoreContext.Provider,
-      { value: initialData },
-      createElement(ToastProvider, null, createElement(ModalProvider, null, createElement(PageComponent))),
-    );
+    createElement(ProductStoreContext.Provider, { value: initialData }, createElement(PageComponent));
 
   if (matchedRoute.path === "/") {
     html = renderToString(wrapWithProviders(HomePage));
