@@ -1,13 +1,17 @@
 import { ProductList, SearchBar } from "../components";
-import { productStore } from "../stores";
 import { router, withLifecycle } from "../router";
 import { loadProducts, loadProductsAndCategories } from "../services";
+import { productStore } from "../stores";
+import { isServer } from "../utils/isServer.js";
 import { PageWrapper } from "./PageWrapper.js";
 
 export const HomePage = withLifecycle(
   {
     onMount: () => {
-      loadProductsAndCategories();
+      const state = productStore.getState();
+      if (state.products.length === 0 || state.loading) {
+        loadProductsAndCategories();
+      }
     },
     watches: [
       () => {
@@ -18,7 +22,7 @@ export const HomePage = withLifecycle(
     ],
   },
   () => {
-    const productState = productStore.getState();
+    const productState = isServer() && global.__SSR_DATA__ ? global.__SSR_DATA__ : productStore.getState();
     const { search: searchQuery, limit, sort, category1, category2 } = router.query;
     const { products, loading, error, totalCount, categories } = productState;
     const category = { category1, category2 };

@@ -1,6 +1,7 @@
-import { productStore } from "../stores";
-import { loadProductDetailForPage } from "../services";
 import { router, withLifecycle } from "../router";
+import { loadProductDetailForPage } from "../services";
+import { productStore } from "../stores";
+import { isServer } from "../utils/isServer.js";
 import { PageWrapper } from "./PageWrapper.js";
 
 const loadingContent = `
@@ -237,12 +238,16 @@ function ProductDetail({ product, relatedProducts = [] }) {
 export const ProductDetailPage = withLifecycle(
   {
     onMount: () => {
-      loadProductDetailForPage(router.params.id);
+      const state = productStore.getState();
+      if (!state.currentProduct || state.currentProduct.productId !== router.params.id || state.loading) {
+        loadProductDetailForPage(router.params.id);
+      }
     },
     watches: [() => [router.params.id], () => loadProductDetailForPage(router.params.id)],
   },
   () => {
-    const { currentProduct: product, relatedProducts = [], error, loading } = productStore.getState();
+    const storeData = isServer() && global.__SSR_DATA__ ? global.__SSR_DATA__ : productStore.getState();
+    const { currentProduct: product, relatedProducts = [], error, loading } = storeData;
 
     return PageWrapper({
       headerLeft: `
