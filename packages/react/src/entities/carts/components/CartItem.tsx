@@ -67,7 +67,7 @@ export function CartItem({ id }: Readonly<Pick<Cart, "id">>) {
                         border-gray-300 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
             disabled
             data-product-id={id}
-            onChange={(e) => change(Number(e.target.value))}
+            onChange={(e) => change(Number(e.currentTarget.value))}
           />
 
           <button

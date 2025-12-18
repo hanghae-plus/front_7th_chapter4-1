@@ -1,4 +1,4 @@
-import type { StringRecord } from "../../types";
+import type { StringRecord } from "@hanghae-plus/lib";
 
 export type Categories = Record<string, Record<string, string | StringRecord>>;
 
