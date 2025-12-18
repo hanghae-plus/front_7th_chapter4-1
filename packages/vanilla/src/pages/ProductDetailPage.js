@@ -1,6 +1,6 @@
 import { productStore } from "../stores";
 import { loadProductDetailForPage } from "../services";
-import { router, withLifecycle } from "../router";
+import { router as clientRouter, withLifecycle } from "../router";
 import { PageWrapper } from "./PageWrapper.js";
 import { getProduct } from "../api/productApi.js";
 import { getRelatedProducts } from "../services/productService.js";
@@ -239,9 +239,9 @@ function ProductDetail({ product, relatedProducts = [] }) {
 export const ProductDetailPage = withLifecycle(
   {
     onMount: () => {
-      loadProductDetailForPage(router.params.id);
+      loadProductDetailForPage(clientRouter.params.id);
     },
-    watches: [() => [router.params.id], () => loadProductDetailForPage(router.params.id)],
+    watches: [() => [clientRouter.params.id], () => loadProductDetailForPage(clientRouter.params.id)],
   },
   (serversideProps) => {
     const {
@@ -272,10 +272,10 @@ export const ProductDetailPage = withLifecycle(
   },
 );
 
-ProductDetailPage.loader = async () => {
+ProductDetailPage.loader = async (serverRouter) => {
   const [currentProduct, relatedProducts] = await Promise.all([
-    getProduct(router.params.id),
-    getRelatedProducts(router.params.category2, router.params.id),
+    getProduct(serverRouter.params?.id),
+    getRelatedProducts(serverRouter.params?.category2 ?? "", serverRouter.params?.id),
   ]);
-  return { currentProduct, relatedProducts };
+  return { data: { currentProduct, relatedProducts }, title: `${currentProduct?.title} - 쇼핑몰` };
 };

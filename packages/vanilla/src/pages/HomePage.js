@@ -1,6 +1,6 @@
 import { ProductList, SearchBar } from "../components";
 import { productStore } from "../stores";
-import { router, withLifecycle } from "../router";
+import { router as clientRouter, withLifecycle } from "../router";
 import { loadProducts, loadProductsAndCategories } from "../services";
 import { PageWrapper } from "./PageWrapper.js";
 import { getProducts, getCategories } from "../api/productApi.js";
@@ -8,18 +8,20 @@ import { getProducts, getCategories } from "../api/productApi.js";
 export const HomePage = withLifecycle(
   {
     onMount: () => {
-      if (productStore.getState().status === "done") return;
+      // 서버에서 이미 데이터가 들어왔으면 데이터 로딩 안함
+      if (clientRouter.query.current === undefined && productStore.getState().products.length > 0) return;
       loadProductsAndCategories();
     },
     watches: [
       () => {
-        const { search, limit, sort, category1, category2 } = router.query;
+        const { search, limit, sort, category1, category2 } = clientRouter.query;
         return [search, limit, sort, category1, category2];
       },
       () => loadProducts(true),
     ],
   },
-  (serversideProps) => {
+  (serversideProps, serverRouter) => {
+    const router = serverRouter || clientRouter;
     const productState = serversideProps || productStore.getState();
     const { search: searchQuery, limit, sort, category1, category2 } = router.query;
     const { products, loading, error, totalCount, categories } = productState;
@@ -51,13 +53,13 @@ export const HomePage = withLifecycle(
   },
 );
 
-HomePage.loader = async () => {
+HomePage.loader = async (serverRouter) => {
   const [
     {
       products,
-      pagination: { count },
+      pagination: { total },
     },
     categories,
-  ] = await Promise.all([getProducts(router.query), getCategories()]);
-  return { products, totalCount: count, categories };
+  ] = await Promise.all([getProducts(serverRouter.query), getCategories()]);
+  return { data: { products, categories, totalCount: total }, title: "쇼핑몰 - 홈" };
 };
