@@ -1,6 +1,7 @@
 import { App } from "./App";
 import { router } from "./router";
 import { BASE_URL } from "./constants.ts";
+import { hydrateFromServerData } from "./hydration";
 import { createRoot } from "react-dom/client";
 
 const enableMocking = () =>
@@ -14,6 +15,9 @@ const enableMocking = () =>
   );
 
 function main() {
+  // 서버에서 전달된 데이터로 상태 복원
+  hydrateFromServerData();
+
   router.start();
 
   const rootElement = document.getElementById("root")!;

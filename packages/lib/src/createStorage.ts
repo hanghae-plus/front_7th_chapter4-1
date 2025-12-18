@@ -1,6 +1,16 @@
 import { createObserver } from "./createObserver.ts";
 
-export const createStorage = <T>(key: string, storage = window.localStorage) => {
+// 더미 스토리지 (서버 환경용)
+const dummyStorage = {
+  getItem: () => null,
+  setItem: () => {},
+  removeItem: () => {},
+};
+
+export const createStorage = <T>(
+  key: string,
+  storage = typeof window !== "undefined" ? window.localStorage : dummyStorage,
+) => {
   let data: T | null = JSON.parse(storage.getItem(key) ?? "null");
   const { subscribe, notify } = createObserver();
 
