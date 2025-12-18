@@ -6,6 +6,7 @@ import { ProductStoreContext } from "./entities/products/ProductStoreContext";
 import { HomePage } from "./pages/HomePage";
 import { ProductDetailPage } from "./pages/ProductDetailPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
+import { router } from "./router/router";
 import type { Product } from "./entities/products/types";
 import type { Categories } from "./entities/products/types";
 
@@ -26,7 +27,8 @@ function filterProducts(products: Product[], query: Record<string, string>) {
   if (query.search) {
     const searchTerm = query.search.toLowerCase();
     filtered = filtered.filter(
-      (item) => item.title.toLowerCase().includes(searchTerm) || item.brand.toLowerCase().includes(searchTerm),
+      (item) =>
+        item.title.toLowerCase().includes(searchTerm) || (item.brand && item.brand.toLowerCase().includes(searchTerm)),
     );
   }
 
@@ -115,11 +117,11 @@ async function prefetchData(
       categories,
       totalCount: filteredProducts.length,
       loading: false,
-      status: "done",
+      status: "done" as const,
       currentProduct: null,
-      relatedProducts: [],
+      relatedProducts: [] as Product[],
       error: null,
-    };
+    } as unknown as typeof initialProductState;
   } else if (route.path === "/product/:id/") {
     // 상품 상세 페이지
     const product = items.find((item) => String(item.productId) === route.params.id);
@@ -159,15 +161,15 @@ async function prefetchData(
 
     // store 없이 데이터만 반환
     return {
-      products: [],
+      products: [] as Product[],
       totalCount: 0,
-      categories: {},
+      categories: {} as Categories,
       loading: false,
-      status: "done",
+      status: "done" as const,
       currentProduct: detailProduct,
       relatedProducts: fallbackRelatedProducts,
       error: null,
-    };
+    } as unknown as typeof initialProductState;
   }
 
   // 기본값
@@ -175,6 +177,19 @@ async function prefetchData(
 }
 
 export const render = async (url: string) => {
+  // SSR에서 URL을 전역 변수에 저장 (useRouterQuery가 SSR에서 쿼리를 읽을 수 있도록)
+  if (typeof globalThis !== "undefined") {
+    globalThis.__SSR_CURRENT_URL__ = url;
+  }
+
+  // SSR에서 router를 URL로 초기화 (router.params가 작동하도록)
+  try {
+    router.push(url);
+  } catch {
+    // SSR에서는 브라우저 히스토리가 없으므로 에러가 발생할 수 있음
+    // 하지만 router의 내부 상태는 업데이트되었을 것
+  }
+
   // 1. 라우트 매칭
   const matchedRoute = matchRoute(url);
 
@@ -205,8 +220,10 @@ export const render = async (url: string) => {
     head = "<title>쇼핑몰 - 홈</title>";
   } else if (matchedRoute.path === "/product/:id/") {
     html = renderToString(wrapWithProviders(ProductDetailPage));
-    const product = initialData.currentProduct;
-    if (product) {
+    const product = initialData.currentProduct as
+      | (Product & { description?: string; rating?: number; reviewCount?: number; stock?: number; images?: string[] })
+      | null;
+    if (product && product.title) {
       head = `<title>${product.title} - 쇼핑몰</title>`;
     } else {
       head = `<title>상품 ${matchedRoute.params.id} 상세 | 쇼핑몰</title>`;
