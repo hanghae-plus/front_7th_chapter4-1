@@ -241,8 +241,9 @@ export const ProductDetailPage = withLifecycle(
     },
     watches: [() => [router.params.id], () => loadProductDetailForPage(router.params.id)],
   },
-  () => {
-    const { currentProduct: product, relatedProducts = [], error, loading } = productStore.getState();
+  (stores) => {
+    const currentProductStore = stores?.productStore || productStore;
+    const { currentProduct: product, relatedProducts = [], error, loading } = currentProductStore.getState();
 
     return PageWrapper({
       headerLeft: `

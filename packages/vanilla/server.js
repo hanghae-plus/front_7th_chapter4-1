@@ -37,7 +37,7 @@ if (!prod) {
 }
 
 app.get("*", async (req, res) => {
-  const url = req.originalUrl.replace(base, "");
+  const url = req.originalUrl.replace(base, "") || "/";
 
   let template;
 
