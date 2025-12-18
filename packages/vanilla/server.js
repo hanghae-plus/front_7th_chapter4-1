@@ -1,9 +1,7 @@
-// server.js
-
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import "cross-fetch/dist/node-polyfill.js"; // [중요] fetch 폴리필 추가 (Node 18+에서는 내장이지만 명시적 확인)
+import "cross-fetch/dist/node-polyfill.js";
 
 // [App Logic]
 import { createStore } from "./src/lib/createStore.js";
@@ -13,15 +11,14 @@ import { router as globalRouter } from "./src/router/router.js";
 import { productReducer } from "./src/stores/productStore.js";
 import { cartReducer } from "./src/stores/cartStore.js";
 
-// [MSW 설정]
+// [MSW 설정 - Node.js 환경용]
 import { setupServer } from 'msw/node';
 import { handlers } from './src/mocks/handlers.js'; 
 
-// [수정 1: MSW 서버 인스턴스 생성 및 실행]
-const mswServer = setupServer(...handlers);
+// [데이터 로드] API 처리를 위해 items.json을 직접 읽어옵니다.
+import items from "./src/mocks/items.json" with { type: "json" };
 
-// [중요] MSW 실행: onUnhandledRequest를 'bypass'로 설정하여
-// MSW가 처리하지 않는 요청은 그대로 통과시켜 Express가 처리하도록 함.
+const mswServer = setupServer(...handlers);
 mswServer.listen({ onUnhandledRequest: 'bypass' });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -31,6 +28,88 @@ const app = express();
 app.use("/src", express.static(path.join(__dirname, "src")));
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.use(express.static(path.join(__dirname, "public")));
+
+// ▼▼▼▼▼ [API 핸들러 추가 - 브라우저 요청 처리용] ▼▼▼▼▼
+
+// 필터링 헬퍼 함수 (handlers.js의 로직 재사용)
+function filterProducts(products, query) {
+  let filtered = [...products];
+
+  if (query.search) {
+    const searchTerm = query.search.toLowerCase();
+    filtered = filtered.filter(
+      (item) => item.title.toLowerCase().includes(searchTerm) || item.brand.toLowerCase().includes(searchTerm),
+    );
+  }
+  if (query.category1) {
+    filtered = filtered.filter((item) => item.category1 === query.category1);
+  }
+  if (query.category2) {
+    filtered = filtered.filter((item) => item.category2 === query.category2);
+  }
+  if (query.sort) {
+    switch (query.sort) {
+      case "price_asc": filtered.sort((a, b) => parseInt(a.lprice) - parseInt(b.lprice)); break;
+      case "price_desc": filtered.sort((a, b) => parseInt(b.lprice) - parseInt(a.lprice)); break;
+      case "name_asc": filtered.sort((a, b) => a.title.localeCompare(b.title, "ko")); break;
+      case "name_desc": filtered.sort((a, b) => b.title.localeCompare(a.title, "ko")); break;
+      default: filtered.sort((a, b) => parseInt(a.lprice) - parseInt(b.lprice));
+    }
+  }
+  return filtered;
+}
+
+// 1. 상품 목록 API
+app.get('/api/products', (req, res) => {
+  try {
+    const page = parseInt(req.query.page || req.query.current || 1);
+    const limit = parseInt(req.query.limit || 20);
+    
+    const filteredProducts = filterProducts(items, req.query);
+    const startIndex = (page - 1) * limit;
+    const paginatedProducts = filteredProducts.slice(startIndex, startIndex + limit);
+
+    res.json({
+      products: paginatedProducts,
+      pagination: {
+        page,
+        limit,
+        total: filteredProducts.length,
+        totalPages: Math.ceil(filteredProducts.length / limit),
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 2. 상품 상세 API
+app.get('/api/products/:id', (req, res) => {
+  const product = items.find((item) => item.productId === req.params.id);
+  if (!product) return res.status(404).json({ error: "Product not found" });
+  
+  // 상세 정보 Mocking
+  res.json({
+    ...product,
+    description: `${product.title} 상세 설명...`,
+    rating: 4.5,
+    reviewCount: 100,
+    stock: 50,
+    images: [product.image]
+  });
+});
+
+// 3. 카테고리 API
+app.get('/api/categories', (req, res) => {
+  const categories = {};
+  items.forEach((item) => {
+    if (!categories[item.category1]) categories[item.category1] = {};
+    if (item.category2) categories[item.category1][item.category2] = {};
+  });
+  res.json(categories);
+});
+
+// ▲▲▲▲▲ [API 핸들러 끝] ▲▲▲▲▲
 
 const renderHtml = ({ content, state }) => {
   const safeState = state || {}; 
@@ -62,22 +141,7 @@ const rootReducer = (state = {}, action) => {
   };
 };
 
-// [수정 2: API 요청 필터링 (Express 5 대응)]
-// Express 5에서는 '/api/*' 와 같은 문법이 에러를 유발합니다.
-// 대신 정규표현식을 사용하여 /api/ 로 시작하는 모든 요청을 잡아냅니다.
-app.all(/^\/api\/.*/, (req, res) => {
-    // MSW가 이 요청을 가로채지 못하고 여기까지 왔다면, 
-    // 핸들러가 없거나 매칭이 안 된 것입니다.
-    // HTML 대신 404 JSON을 반환하여 클라이언트(fetch)가 '<' 에러를 내지 않도록 합니다.
-    console.warn(`[SSR Server] Unhandled API request: ${req.method} ${req.url}`);
-    res.status(404).json({ 
-        error: "API Route Not Found (Likely MSW Miss)", 
-        path: req.url 
-    });
-});
-
-// [수정 3: SSR 렌더링 라우트]
-// 모든 페이지 요청을 처리합니다.
+// SSR 렌더링 라우트
 app.get(/.*/, async (req, res) => {
   try {
     const store = createStore(rootReducer);

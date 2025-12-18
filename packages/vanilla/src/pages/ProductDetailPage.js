@@ -35,7 +35,6 @@ const ErrorContent = ({ error }) => `
 `;
 
 function ProductDetail({ product, relatedProducts = [] }) {
-  // [방어 코드] product가 없으면 렌더링하지 않음 (상위에서 막겠지만 혹시 모를 안전장치)
   if (!product) return "";
 
   const {
@@ -54,7 +53,6 @@ function ProductDetail({ product, relatedProducts = [] }) {
 
   const price = Number(lprice);
 
-  // 브레드크럼 생성
   const breadcrumbItems = [];
   if (category1) breadcrumbItems.push({ name: category1, category: "category1", value: category1 });
   if (category2) breadcrumbItems.push({ name: category2, category: "category2", value: category2 });
@@ -224,21 +222,19 @@ function ProductDetail({ product, relatedProducts = [] }) {
 
 /**
  * [ISOMORPHIC] 상품 상세 페이지 컴포넌트
- * SSR 지원을 위해 변수로 선언하고 하단에서 export 합니다.
  */
 const ProductDetailPageComponent = withLifecycle(
   {
     onMount: () => {
-      // [수정] watches에서 ID 변경을 감지하여 데이터를 로드하므로,
-      // onMount에서의 중복 호출을 제거하여 Double Fetch 방지
-      // 만약 watches가 초기화 시 실행되지 않는다면 아래 주석을 해제해야 함
+      // CSR 동작: 마운트 시 데이터 로드
       loadProductDetailForPage(router.params.id);
     },
     watches: [
       () => [router.params.id],
-      // [수정] ID가 변경될 때마다 데이터 로드 (첫 진입 시에도 동작 예상)
-      (newId) => {
-          if(newId) loadProductDetailForPage(newId);
+      // [수정] callback에 인자가 전달되지 않으므로 router에서 직접 조회하여 실행
+      () => {
+        const id = router.params.id;
+        if (id) loadProductDetailForPage(id);
       }
     ],
   },
@@ -257,8 +253,6 @@ const ProductDetailPageComponent = withLifecycle(
           <h1 class="text-lg font-bold text-gray-900">상품 상세</h1>
         </div>
       `.trim(),
-      // [핵심 수정] loading이거나 product가 null이면 무조건 로딩 화면 노출
-      // 이렇게 해야 데이터가 오기 전 'null'인 product를 그리려다 에러가 나는 것을 방지함
       children: (loading || !product)
         ? loadingContent
         : error
