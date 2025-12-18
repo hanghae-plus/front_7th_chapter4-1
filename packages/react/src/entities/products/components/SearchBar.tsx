@@ -89,7 +89,7 @@ const handleSubCategoryClick = async (e: MouseEvent<HTMLButtonElement>) => {
 
 export function SearchBar() {
   const { categories } = useProductStore();
-  const { searchQuery, limit = "20", sort, category } = useProductFilter();
+  const { searchQuery, limit = "20", sort = "price_asc", category } = useProductFilter();
 
   const categoryList = Object.keys(categories).length > 0 ? Object.keys(categories) : [];
   const limitOptions = OPTION_LIMITS.map((value) => (
@@ -124,7 +124,7 @@ export function SearchBar() {
             type="text"
             id="search-input"
             placeholder="상품명을 검색해보세요..."
-            defaultValue={searchQuery}
+            defaultValue={searchQuery || ""}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg
                         focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             onKeyDown={handleSearchKeyDown}
@@ -232,7 +232,7 @@ export function SearchBar() {
               id="limit-select"
               className="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
               onChange={handleLimitChange}
-              defaultValue={Number(limit)}
+              defaultValue={limit ? Number(limit) : 20}
             >
               {limitOptions}
             </select>
@@ -248,7 +248,7 @@ export function SearchBar() {
               className="text-sm border border-gray-300 rounded px-2 py-1
                            focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
               onChange={handleSortChange}
-              defaultValue={sort}
+              defaultValue={sort || "price_asc"}
             >
               {sortOptions}
             </select>
