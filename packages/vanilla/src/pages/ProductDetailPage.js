@@ -237,6 +237,13 @@ function ProductDetail({ product, relatedProducts = [] }) {
 export const ProductDetailPage = withLifecycle(
   {
     onMount: () => {
+      const state = productStore.getState();
+
+      // 이미 데이터가 있으면 API 호출 생략
+      if (state.currentProduct?.productId === router.params.id && state.status === "done") {
+        return;
+      }
+
       loadProductDetailForPage(router.params.id);
     },
     watches: [() => [router.params.id], () => loadProductDetailForPage(router.params.id)],

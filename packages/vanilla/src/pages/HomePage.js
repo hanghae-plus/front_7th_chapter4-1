@@ -7,6 +7,13 @@ import { PageWrapper } from "./PageWrapper.js";
 export const HomePage = withLifecycle(
   {
     onMount: () => {
+      const state = productStore.getState();
+
+      // 이미 데이터가 있으면 API 호출 생략
+      if (state.products.length > 0 && state.status === "done") {
+        return;
+      }
+
       loadProductsAndCategories();
     },
     watches: [

@@ -1,6 +1,9 @@
 import { getCategories, getProduct, getProducts } from "../api/productApi";
 import { initialProductState, productStore, PRODUCT_ACTIONS } from "../stores";
 import { router } from "../router";
+import { mockGetProducts } from "../mocks/mockApi";
+
+const isServer = typeof window === "undefined";
 
 export const loadProductsAndCategories = async () => {
   router.query = { current: undefined }; // 항상 첫 페이지로 초기화
@@ -20,7 +23,7 @@ export const loadProductsAndCategories = async () => {
         pagination: { total },
       },
       categories,
-    ] = await Promise.all([getProducts(router.query), getCategories()]);
+    ] = await Promise.all([isServer ? mockGetProducts(router.query) : getProducts(router.query), getCategories()]);
 
     // 페이지 리셋이면 새로 설정, 아니면 기존에 추가
     productStore.dispatch({
@@ -55,7 +58,7 @@ export const loadProducts = async (resetList = true) => {
     const {
       products,
       pagination: { total },
-    } = await getProducts(router.query);
+    } = isServer ? await mockGetProducts(router.query) : await getProducts(router.query);
     const payload = { products, totalCount: total };
 
     // 페이지 리셋이면 새로 설정, 아니면 기존에 추가
@@ -172,7 +175,7 @@ export const loadRelatedProducts = async (category2, excludeProductId) => {
       page: 1,
     };
 
-    const response = await getProducts(params);
+    const response = isServer ? await mockGetProducts(params) : await getProducts(params);
 
     // 현재 상품 제외
     const relatedProducts = response.products.filter((product) => product.productId !== excludeProductId);
