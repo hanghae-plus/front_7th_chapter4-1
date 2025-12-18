@@ -169,7 +169,7 @@ async function prefetchProductDetail(productId) {
  * 서버 사이드 렌더링 함수
  * @param {string} url - 요청 URL
  * @param {Object} query - 쿼리 파라미터 객체
- * @returns {Promise<string>} 렌더링된 HTML 문자열
+ * @returns {Promise<{html: string, initialData: Object}>} 렌더링된 HTML 문자열과 초기 데이터
  */
 export const render = async (url, query = {}) => {
   try {
@@ -197,10 +197,31 @@ export const render = async (url, query = {}) => {
     // 페이지 컴포넌트 실행
     const html = route.handler();
 
-    return html || "";
+    // 스토어 상태 수집 (Hydration을 위해)
+    const initialData = {
+      productStore: productStore.getState(),
+      cartStore: cartStore.getState(),
+      uiStore: uiStore.getState(),
+    };
+
+    return {
+      html: html || "",
+      initialData,
+    };
   } catch (error) {
     console.error("SSR Render Error:", error);
     // 에러 발생 시 기본 페이지 반환
-    return NotFoundPage();
+    return {
+      html: NotFoundPage(),
+      initialData: {
+        productStore: initialProductState,
+        cartStore: { items: [], selectedAll: false },
+        uiStore: {
+          cartModal: { isOpen: false },
+          globalLoading: false,
+          toast: { isVisible: false, message: "", type: "info" },
+        },
+      },
+    };
   }
 };

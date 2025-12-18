@@ -45,7 +45,7 @@ const assetFiles = findAssetFiles();
 /**
  * HTML 템플릿 생성 함수
  */
-function createHtmlTemplate(html, headContent = "", baseUrl, isProd, assets) {
+function createHtmlTemplate(html, headContent = "", baseUrl, isProd, assets, initialData = null) {
   const cssPath = `${baseUrl}${assets.css}`;
   const jsPath = `${baseUrl}${assets.js}`;
 
@@ -102,6 +102,13 @@ function createHtmlTemplate(html, headContent = "", baseUrl, isProd, assets) {
     result = result.replace(/src="\/src\/main\.js"/g, `src="${jsPath}"`);
   }
 
+  // 초기 데이터 스크립트 주입 (Hydration을 위해)
+  if (initialData) {
+    const initialDataScript = `<script>window.__INITIAL_DATA__ = ${JSON.stringify(initialData)};</script>`;
+    // </body> 태그 앞에 스크립트 삽입
+    result = result.replace("</body>", `${initialDataScript}\n  </body>`);
+  }
+
   return result;
 }
 
@@ -113,11 +120,11 @@ async function ssrMiddleware(req, res, next) {
     const url = req.originalUrl.replace(base, "/") || "/";
     const query = req.query;
 
-    // SSR 렌더링
-    const html = await render(url, query);
+    // SSR 렌더링 (html과 initialData 반환)
+    const { html, initialData } = await render(url, query);
 
-    // HTML 템플릿 생성 및 응답
-    const template = createHtmlTemplate(html, base, prod, assetFiles);
+    // HTML 템플릿 생성 및 응답 (initialData 포함)
+    const template = createHtmlTemplate(html, "", base, prod, assetFiles, initialData);
     res.setHeader("Content-Type", "text/html");
     res.send(template);
   } catch (error) {
