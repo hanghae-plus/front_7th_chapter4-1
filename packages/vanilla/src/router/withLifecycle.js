@@ -26,8 +26,14 @@ const depsChanged = (newDeps, oldDeps) => {
   return newDeps.some((dep, index) => dep !== oldDeps[index]);
 };
 
+// 서버 환경 체크
+const isServer = typeof window === "undefined";
+
 // 페이지 마운트 처리
 const mount = (page) => {
+  // 서버 환경에서는 onMount 실행하지 않음 (데이터는 prefetchData에서 처리)
+  if (isServer) return;
+
   const lifecycle = getPageLifecycle(page);
   if (lifecycle.mounted) return;
 
