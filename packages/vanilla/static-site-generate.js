@@ -1,20 +1,53 @@
-import fs from "fs";
+/**
+ * 정적 사이트 생성 (SSG) 스크립트
+ *
+ * 모든 페이지를 미리 렌더링하여 정적 HTML 파일로 생성함
+ * - 404 페이지
+ * - 홈 페이지
+ * - 각 상품 상세 페이지
+ */
 
-const render = () => {
-  return `<div>안녕하세요</div>`;
+import fs from "node:fs";
+import path from "node:path";
+import { server as mswServer } from "./src/mocks/nodeServer.js";
+import { DIST_SSG_DIR } from "./src/constants.js";
+import { createViteServer, generatePage } from "./src/server/utils/ssrUtils.js";
+
+/**
+ * 정적 페이지 생성 함수
+ */
+const generateStaticPages = async () => {
+  // MSW 서버 시작 (SSR 렌더링 시 API 모킹 필요)
+  mswServer.listen({ onUnhandledRequest: "bypass" });
+
+  // Vite 서버 생성 (SSR 모듈 로드를 위해 필요)
+  const viteServer = await createViteServer();
+
+  try {
+    // SSR 렌더 함수와 HTML 템플릿 로드
+    const { render } = await viteServer.ssrLoadModule("./src/main-server.js");
+    const template = fs.readFileSync(path.join(DIST_SSG_DIR, "index.html"), "utf-8");
+
+    // 404 페이지 생성
+    await generatePage("/404.html", render, template, DIST_SSG_DIR);
+    // 홈 페이지 생성
+    await generatePage("/", render, template, DIST_SSG_DIR);
+
+    // 상품 목록 가져오기
+    const { getProducts } = await viteServer.ssrLoadModule("./src/api/productApi.js");
+    const { products } = await getProducts();
+
+    // 각 상품 상세 페이지 생성 (병렬 처리)
+    const productTasks = products.map((product) =>
+      generatePage(`/product/${product.productId}/`, render, template, DIST_SSG_DIR),
+    );
+    await Promise.all(productTasks);
+  } finally {
+    // 리소스 정리
+    mswServer.close();
+    viteServer.close();
+  }
 };
 
-async function generateStaticSite() {
-  // HTML 템플릿 읽기
-  const template = fs.readFileSync("../../dist/vanilla/index.html", "utf-8");
-
-  // 어플리케이션 렌더링하기
-  const appHtml = render();
-
-  // 결과 HTML 생성하기
-  const result = template.replace("<!--app-html-->", appHtml);
-  fs.writeFileSync("../../dist/vanilla/index.html", result);
-}
-
-// 실행
-generateStaticSite();
+// 정적 페이지 생성 실행
+generateStaticPages();
