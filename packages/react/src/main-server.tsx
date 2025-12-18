@@ -1,7 +1,9 @@
 import { renderToString } from "react-dom/server";
-import { createElement } from "react";
+import React, { createElement } from "react";
 import items from "./mocks/items.json";
 import { initialProductState } from "./entities/products/productStore";
+import { ProductStoreContext } from "./entities/products/ProductStoreContext";
+import { ModalProvider, ToastProvider } from "./components";
 import { HomePage } from "./pages/HomePage";
 import { ProductDetailPage } from "./pages/ProductDetailPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
@@ -189,15 +191,24 @@ export const render = async (url: string) => {
   // 3. 데이터만 준비 (store 없이!)
   const initialData = await prefetchData(matchedRoute, url);
 
-  // 4. 컴포넌트 렌더링 (store는 빈 상태지만, 클라이언트에서 초기화됨)
+  // 4. Context Provider로 데이터 주입하여 컴포넌트 렌더링
+  // 서버에서는 라우트 매칭 결과로 페이지 컴포넌트를 직접 렌더링
   let html: string;
   let head: string;
 
+  // Context Provider와 Provider들로 감싸는 헬퍼 함수
+  const wrapWithProviders = (PageComponent: React.ComponentType<Record<string, never>>) =>
+    createElement(
+      ProductStoreContext.Provider,
+      { value: initialData },
+      createElement(ToastProvider, null, createElement(ModalProvider, null, createElement(PageComponent))),
+    );
+
   if (matchedRoute.path === "/") {
-    html = renderToString(createElement(HomePage)); // store 없이 렌더링
+    html = renderToString(wrapWithProviders(HomePage));
     head = "<title>쇼핑몰 - 홈</title>";
   } else if (matchedRoute.path === "/product/:id/") {
-    html = renderToString(createElement(ProductDetailPage)); // store 없이 렌더링
+    html = renderToString(wrapWithProviders(ProductDetailPage));
     const product = initialData.currentProduct;
     if (product) {
       head = `<title>${product.title} - 쇼핑몰</title>`;
@@ -205,7 +216,7 @@ export const render = async (url: string) => {
       head = `<title>상품 ${matchedRoute.params.id} 상세 | 쇼핑몰</title>`;
     }
   } else {
-    html = renderToString(createElement(NotFoundPage));
+    html = renderToString(wrapWithProviders(NotFoundPage));
     head = "<title>404 | 쇼핑몰</title>";
   }
 

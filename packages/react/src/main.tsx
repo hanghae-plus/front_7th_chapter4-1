@@ -29,7 +29,6 @@ const enableMocking = () =>
 function hydrateStore() {
   // window.__INITIAL_DATA__가 있으면 서버에서 렌더링된 페이지
   if (typeof window !== "undefined") {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const initialData = (window as { __INITIAL_DATA__?: { productStore?: typeof initialProductState } })
       .__INITIAL_DATA__;
     if (initialData) {
@@ -44,7 +43,7 @@ function hydrateStore() {
       }
 
       // 초기 데이터 사용 후 삭제 (메모리 절약)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       delete (window as { __INITIAL_DATA__?: unknown }).__INITIAL_DATA__;
     }
   }
