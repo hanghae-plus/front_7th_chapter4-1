@@ -1,10 +1,25 @@
+// 서버용 더미 스토리지 (아무것도 안 함)
+const dummyStorage = {
+  getItem: () => null,
+  setItem: () => {},
+  removeItem: () => {},
+};
+
+// 서버/클라이언트 분기
+const getDefaultStorage = () => {
+  if (typeof window === "undefined") {
+    return dummyStorage;
+  }
+  return window.localStorage;
+};
+
 /**
  * 로컬스토리지 추상화 함수
  * @param {string} key - 스토리지 키
  * @param {Storage} storage - 기본값은 localStorage
  * @returns {Object} { get, set, reset }
  */
-export const createStorage = (key, storage = window.localStorage) => {
+export const createStorage = (key, storage = getDefaultStorage()) => {
   const get = () => {
     try {
       const item = storage.getItem(key);
