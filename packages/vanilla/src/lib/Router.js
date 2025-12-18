@@ -126,10 +126,13 @@ export class Router {
 
   /**
    * 라우터 시작
+   * @param {boolean} skipInitialNotify - 초기 알림 건너뛰기 (SSR/SSG Hydration 시 사용)
    */
-  start() {
+  start(skipInitialNotify = false) {
     this.#route = this.#findRoute();
-    this.#observer.notify();
+    if (!skipInitialNotify) {
+      this.#observer.notify();
+    }
   }
 
   /**

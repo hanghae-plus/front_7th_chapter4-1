@@ -39,12 +39,36 @@ function updatePageTitle() {
   }
 }
 
+// SSR/SSG로 이미 렌더링되었는지 추적하는 플래그
+let isInitialRender = true;
+
+/**
+ * SSR 데이터 존재 여부 확인
+ */
+function hasSSRData() {
+  if (typeof window === "undefined") return false;
+  return typeof window.__INITIAL_DATA__ !== "undefined" && window.__INITIAL_DATA__?.productStore;
+}
+
 /**
  * 전체 애플리케이션 렌더링
  */
 export const render = withBatch(() => {
   const rootElement = document.getElementById("root");
   if (!rootElement) return;
+
+  // 초기 렌더링이고 SSR/SSG 데이터가 있으면 렌더링 건너뛰기 (Hydration)
+  if (isInitialRender) {
+    if (hasSSRData()) {
+      // SSR/SSG로 이미 렌더링된 경우, 초기 렌더링은 건너뛰고 타이틀만 업데이트
+      isInitialRender = false;
+      setTimeout(() => {
+        updatePageTitle();
+      }, 0);
+      return;
+    }
+    isInitialRender = false;
+  }
 
   const PageComponent = router.target;
 

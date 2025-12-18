@@ -23,13 +23,14 @@ const enableMocking = () =>
 
 /**
  * 서버에서 전달된 초기 상태를 클라이언트 스토어에 복원 (Hydration)
+ * @returns {boolean} SSR/SSG 데이터가 있었는지 여부
  */
 function hydrateStores() {
   // window.__INITIAL_DATA__에서 서버 상태 읽기
   const initialState = window.__INITIAL_DATA__ || {};
 
   if (typeof window.__INITIAL_DATA__ === "undefined" || !initialState.productStore) {
-    return;
+    return false;
   }
 
   // productStore 상태 복원
@@ -37,11 +38,13 @@ function hydrateStores() {
     type: PRODUCT_ACTIONS.SETUP,
     payload: initialState.productStore,
   });
+
+  return true;
 }
 
 function main() {
   // 1. 서버에서 전달된 초기 상태 복원 (Hydration)
-  hydrateStores();
+  const hasInitialData = hydrateStores();
 
   // 2. 이벤트 등록
   registerAllEvents();
@@ -51,9 +54,9 @@ function main() {
   loadCartFromStorage();
 
   // 4. 렌더링 초기화 및 라우터 시작
-  // 서버에서 이미 HTML이 렌더링되어 있으므로, 클라이언트에서는 이벤트만 연결
+  // SSR/SSG로 이미 HTML이 렌더링되어 있으면 초기 렌더링 건너뛰기
   initRender();
-  router.start();
+  router.start(hasInitialData); // SSR/SSG 데이터가 있으면 초기 알림 건너뛰기
 }
 
 // import.meta.env가 존재하는지 확인

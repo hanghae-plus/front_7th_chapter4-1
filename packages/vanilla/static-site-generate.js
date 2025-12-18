@@ -10,7 +10,7 @@ import { server } from "./src/mocks/node.js";
 server.listen({ onUnhandledRequest: "bypass" });
 
 // 상품 데이터 및 유틸리티 import
-import items from "./src/mocks/items.json" with { type: "json" };
+import items from "./src/mocks/items.json";
 import { render } from "./src/main-server.js";
 import { filterProducts } from "./src/utils/productFilter.js";
 import { injectIntoTemplate } from "./src/utils/htmlUtils.js";

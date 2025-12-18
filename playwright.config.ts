@@ -46,35 +46,5 @@ export default defineConfig({
       reuseExistingServer: true,
       timeout: 120 * 1000,
     },
-    {
-      command: "pnpm run serve:test",
-      port: 5175, // React DevCSR 서버 포트
-      reuseExistingServer: true,
-      timeout: 120 * 1000,
-    },
-    {
-      command: "pnpm run serve:test",
-      port: 4175, // React ProdCSR 서버 포트
-      reuseExistingServer: true,
-      timeout: 120 * 1000,
-    },
-    {
-      command: "pnpm run serve:test",
-      port: 5176, // React DevSSR 서버 포트
-      reuseExistingServer: true,
-      timeout: 120 * 1000,
-    },
-    {
-      command: "pnpm run serve:test",
-      port: 4176, // React ProdSSR 서버 포트
-      reuseExistingServer: true,
-      timeout: 120 * 1000,
-    },
-    {
-      command: "pnpm run serve:test",
-      port: 4179, // React SSG 서버 포트
-      reuseExistingServer: true,
-      timeout: 120 * 1000,
-    },
   ],
 });
