@@ -27,20 +27,45 @@ function hydrateStores() {
     if (productState) {
       productStore.dispatch({
         type: PRODUCT_ACTIONS.SETUP,
-        payload: productState,
+        payload: {
+          ...productState,
+          // 서버에서 이미 로드된 상태이므로 loading을 false로 설정
+          loading: false,
+        },
       });
     }
 
-    // Cart Store 복원 (서버에서는 빈 상태이므로 클라이언트에서 로컬스토리지에서 로드)
-    // loadCartFromStorage()가 나중에 호출되므로 여기서는 복원하지 않음
+    // Cart Store 복원
+    // 서버에서는 빈 상태이지만, 클라이언트에서 로컬스토리지에서 로드하므로
+    // 서버 상태는 무시하고 loadCartFromStorage()에서 처리
 
     // UI Store 복원
     if (uiState) {
-      if (!uiState.cartModal?.isOpen) {
-        uiStore.dispatch({ type: UI_ACTIONS.CLOSE_CART_MODAL });
+      // 전체 UI 상태를 복원
+      // cartModal 상태 복원
+      if (uiState.cartModal) {
+        if (uiState.cartModal.isOpen) {
+          // 서버에서는 모달이 열려있지 않으므로 복원할 필요 없음
+        } else {
+          uiStore.dispatch({ type: UI_ACTIONS.CLOSE_CART_MODAL });
+        }
       }
-      if (!uiState.toast?.isVisible) {
-        uiStore.dispatch({ type: UI_ACTIONS.HIDE_TOAST });
+
+      // globalLoading 상태는 클라이언트에서 관리하므로 복원하지 않음
+
+      // toast 상태 복원
+      if (uiState.toast) {
+        if (uiState.toast.isVisible) {
+          uiStore.dispatch({
+            type: UI_ACTIONS.SHOW_TOAST,
+            payload: {
+              message: uiState.toast.message,
+              type: uiState.toast.type || "info",
+            },
+          });
+        } else {
+          uiStore.dispatch({ type: UI_ACTIONS.HIDE_TOAST });
+        }
       }
     }
 
