@@ -6,7 +6,7 @@ import { router } from "./router/router.js";
 
 router.addRoute("/", HomePage);
 router.addRoute("/product/:id/", ProductDetailPage);
-router.addRoute(".*", NotFoundPage);
+//router.addRoute(".*", NotFoundPage);
 
 async function prefetchData(serverProductStore, serverCartStore, params) {
   // 카테고리 데이터 생성
@@ -68,7 +68,7 @@ export const render = async (url, query) => {
 
     router.start();
     router.push(url);
-    router.query = query;
+    router.query = query || {};
     //const matchedRoute = router.findRoute(url);
 
     // 3. 데이터 프리페칭
@@ -97,8 +97,6 @@ export const render = async (url, query) => {
         <meta name="description" content="최고의 상품을 만나보세요" />
       `;
     }
-
-    console.log({ url, hasData: !!initialData });
 
     return { html, head, initialData };
   } catch (error) {

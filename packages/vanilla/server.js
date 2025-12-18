@@ -47,7 +47,7 @@ app.get("*", async (req, res) => {
     template = await vite.transformIndexHtml(url, template);
   } else {
     // production : 빌드된 html 사용
-    template = fs.readFileSync(path.resolve(__dirname, "dist/vanilla-ssr/index.html"), "utf-8");
+    template = fs.readFileSync(path.resolve(__dirname, "dist/vanilla/index.html"), "utf-8");
   }
   const { html, head, initialData } = await render(url);
 
