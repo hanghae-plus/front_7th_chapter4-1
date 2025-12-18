@@ -1,4 +1,4 @@
-import { productStore } from "../stores";
+import { getActiveStore } from "../stores";
 import { loadProductDetailForPage } from "../services";
 import { router, withLifecycle } from "../router";
 import { PageWrapper } from "./PageWrapper.js";
@@ -233,6 +233,14 @@ function ProductDetail({ product, relatedProducts = [] }) {
 
 /**
  * 상품 상세 페이지 컴포넌트
+ *
+ * 렌더링 상태 결정 로직:
+ * - product 존재 → 상품 상세 표시 (SSR/CSR 데이터 로드 완료)
+ * - product 없음 + error 존재 → 에러 표시
+ * - product 없음 + error 없음 → 로딩 표시 (CSR 초기 로딩 중)
+ *
+ * 이 로직은 `loading` 플래그 대신 데이터 존재 여부로 상태를 판단하여
+ * SSR에서 별도의 loading 상태 주입이 필요 없게 합니다.
  */
 export const ProductDetailPage = withLifecycle(
   {
@@ -242,12 +250,24 @@ export const ProductDetailPage = withLifecycle(
     watches: [() => [router.params.id], () => loadProductDetailForPage(router.params.id)],
   },
   () => {
-    const { currentProduct: product, relatedProducts = [], error, loading } = productStore.getState();
+    // SSR/CSR 환경에 따라 적절한 스토어 사용
+    const { currentProduct: product, relatedProducts = [], error } = getActiveStore().getState();
+
+    // 렌더링 상태 결정: 데이터 존재 여부 기반
+    const renderContent = () => {
+      if (product) {
+        return ProductDetail({ product, relatedProducts });
+      }
+      if (error) {
+        return ErrorContent({ error });
+      }
+      return loadingContent;
+    };
 
     return PageWrapper({
       headerLeft: `
         <div class="flex items-center space-x-3">
-          <button onclick="window.history.back()" 
+          <button onclick="window.history.back()"
                   class="p-2 text-gray-700 hover:text-gray-900 transition-colors">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
@@ -256,11 +276,7 @@ export const ProductDetailPage = withLifecycle(
           <h1 class="text-lg font-bold text-gray-900">상품 상세</h1>
         </div>
       `.trim(),
-      children: loading
-        ? loadingContent
-        : error && !product
-          ? ErrorContent({ error })
-          : ProductDetail({ product, relatedProducts }),
+      children: renderContent(),
     });
   },
 );
