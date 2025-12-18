@@ -9,6 +9,9 @@ export const initialProductState = {
   products: [],
   totalCount: 0,
 
+  // 카테고리 목록
+  categories: {},
+
   // 상품 상세
   currentProduct: null,
   relatedProducts: [],
@@ -17,9 +20,6 @@ export const initialProductState = {
   loading: true,
   error: null,
   status: "idle",
-
-  // 카테고리 목록
-  categories: {},
 };
 
 /**
