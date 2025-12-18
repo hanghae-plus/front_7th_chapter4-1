@@ -147,7 +147,7 @@ export function registerProductDetailEvents() {
     if (!productId) return;
 
     // 상품 상세 페이지로 이동
-    router.push(`/product/${productId}`);
+    router.push(`/product/${productId}/`);
   });
 
   // 상품 상세 페이지에서 관련 상품 클릭
@@ -156,7 +156,7 @@ export function registerProductDetailEvents() {
     if (!productId) return;
 
     // 상품 상세 페이지로 이동
-    router.push(`/product/${productId}`);
+    router.push(`/product/${productId}/`);
   });
 
   // 상품 상세 페이지에서 브레드크럼 카테고리 클릭

@@ -2,7 +2,9 @@ import { createServerRouter, registerRoutes } from "./router/router.js";
 import { routes } from "./router/routes.js";
 
 export const render = async (url) => {
-  const [pathname, search] = url.split("?");
+  const [rawPathname, search] = url.split("?");
+  // pathname이 /로 시작하도록 정규화
+  const pathname = rawPathname.startsWith("/") ? rawPathname : "/" + rawPathname;
   const query = Object.fromEntries(new URLSearchParams(search || ""));
 
   const router = createServerRouter();
@@ -25,15 +27,17 @@ export const render = async (url) => {
     });
   }
 
+  // 타이틀 결정 (props에서 동적 타이틀 또는 라우트 기본 타이틀)
+  const title = props.title || route.handler.title || "쇼핑몰";
+
   // HTML 렌더링
   const html = route.handler.component(props);
 
   // 클라이언트 hydration용 초기 데이터
   const head = `
-     <title>쇼핑몰</title>
-     <script>window.__INITIAL_DATA__ 
- = ${JSON.stringify(props)};</script>
-   `;
+    <title>${title}</title>
+    <script>window.__INITIAL_DATA__ = ${JSON.stringify(props)};</script>
+  `;
 
   return { head, html };
 };
