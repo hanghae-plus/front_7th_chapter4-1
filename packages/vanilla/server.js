@@ -16,6 +16,30 @@ mswServer.listen({
   onUnhandledRequest: "bypass",
 });
 
+/**
+ * initialData 스크립트 태그 생성
+ * @param {Object} initialData
+ * @returns {string}
+ */
+function createInitialDataScript(initialData) {
+  return `<script>window.__INITIAL_DATA__ = ${JSON.stringify(initialData)};</script>`;
+}
+
+/**
+ * HTML 템플릿에 SSR 결과 삽입
+ * @param {string} template
+ * @param {{ html: string, head: string, initialData: Object }} renderResult
+ * @returns {string}
+ */
+function applyTemplate(template, { html, head, initialData }) {
+  const initialDataScript = createInitialDataScript(initialData);
+
+  return template
+    .replace("<!--app-head-->", head)
+    .replace("<!--app-html-->", html)
+    .replace("</head>", `${initialDataScript}</head>`);
+}
+
 async function createServer() {
   const app = express();
 
@@ -53,18 +77,12 @@ async function createServer() {
         render = ssrModule.render;
 
         // 4. 렌더링 실행
-        const { html: appHtml, head, initialData } = await render(url);
+        const renderResult = await render(url);
 
-        // 5. initialData 스크립트 생성
-        const initialDataScript = `<script>window.__INITIAL_DATA__ = ${JSON.stringify(initialData)};</script>`;
+        // 5. 템플릿 적용
+        const finalHtml = applyTemplate(template, renderResult);
 
-        // 6. 템플릿 치환
-        const finalHtml = template
-          .replace("<!--app-head-->", head)
-          .replace("<!--app-html-->", appHtml)
-          .replace("</head>", `${initialDataScript}</head>`);
-
-        // 7. 응답
+        // 6. 응답
         res.status(200).set({ "Content-Type": "text/html" }).end(finalHtml);
       } catch (e) {
         // Vite 에러 처리
@@ -98,18 +116,12 @@ async function createServer() {
 
       try {
         // 1. 렌더링 실행
-        const { html: appHtml, head, initialData } = await render(url);
+        const renderResult = await render(url);
 
-        // 2. initialData 스크립트 생성
-        const initialDataScript = `<script>window.__INITIAL_DATA__ = ${JSON.stringify(initialData)};</script>`;
+        // 2. 템플릿 적용
+        const finalHtml = applyTemplate(template, renderResult);
 
-        // 3. 템플릿 치환
-        const finalHtml = template
-          .replace("<!--app-head-->", head)
-          .replace("<!--app-html-->", appHtml)
-          .replace("</head>", `${initialDataScript}</head>`);
-
-        // 4. 응답
+        // 3. 응답
         res.status(200).set({ "Content-Type": "text/html" }).end(finalHtml);
       } catch (e) {
         console.error(e);

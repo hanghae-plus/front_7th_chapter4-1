@@ -11,6 +11,34 @@ const DIST_DIR = join(__dirname, "../../dist/vanilla");
 const TEMPLATE_PATH = join(__dirname, "../../dist/vanilla/index.html");
 
 /**
+ * initialData 스크립트 태그 생성
+ * @param {Object} initialData
+ * @returns {string}
+ */
+function createInitialDataScript(initialData) {
+  return `
+    <script>
+      window.__INITIAL_DATA__ = ${JSON.stringify(initialData)};
+    </script>
+  `;
+}
+
+/**
+ * HTML 템플릿에 SSR 결과 삽입
+ * @param {string} template
+ * @param {{ html: string, head: string, initialData: Object }} renderResult
+ * @returns {string}
+ */
+function applyTemplate(template, { html, head, initialData }) {
+  const initialDataScript = createInitialDataScript(initialData);
+
+  return template
+    .replace("<!--app-head-->", head)
+    .replace("<!--app-html-->", html)
+    .replace("</head>", `${initialDataScript}</head>`);
+}
+
+/**
  * 정적 사이트 생성
  */
 async function generateStaticSite() {
@@ -46,20 +74,10 @@ async function generateStaticSite() {
       console.log(`페이지 생성 중: ${page.url}`);
 
       try {
-        const { html, head, initialData } = await render(page.url, page.query || {});
+        const renderResult = await render(page.url, page.query || {});
 
-        // 초기 데이터 스크립트 생성
-        const initialDataScript = `
-          <script>
-            window.__INITIAL_DATA__ = ${JSON.stringify(initialData)};
-          </script>
-        `;
-
-        // HTML 템플릿 치환
-        const finalHtml = template
-          .replace("<!--app-head-->", head)
-          .replace("<!--app-html-->", html)
-          .replace("</head>", `${initialDataScript}</head>`);
+        // HTML 템플릿 적용
+        const finalHtml = applyTemplate(template, renderResult);
 
         // 디렉토리 생성 (필요한 경우)
         const dir = dirname(page.filePath);
