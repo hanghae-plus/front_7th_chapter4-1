@@ -26,9 +26,15 @@ jobs:
       - name: Build
         run: pnpm run build
 
-      # 404.html 생성 (index.advanced.html 복사) - SPA 라우팅 지원
+      # 404.html 생성 - SPA 라우팅 지원
       - name: Create 404.html for SPA routing
-        run: cp dist/index.html dist/404.html
+        run: |
+          if [ -f dist/vanilla/index.html ]; then
+            cp dist/vanilla/index.html dist/vanilla/404.html
+          fi
+          if [ -f dist/react/index.html ]; then
+            cp dist/react/index.html dist/react/404.html
+          fi
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
