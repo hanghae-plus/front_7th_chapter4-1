@@ -53,7 +53,7 @@ export const handlers = [
     }
 
     // 상세 정보에 추가 데이터 포함
-    const detailProduct = enhanceProductDetail(product, true);
+    const detailProduct = enhanceProductDetail(product);
 
     return HttpResponse.json(detailProduct);
   }),
