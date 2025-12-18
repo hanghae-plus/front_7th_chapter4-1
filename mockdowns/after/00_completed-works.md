@@ -750,6 +750,43 @@ async function generatePage(routeInfo, template) {
    - `build:ssg` 스크립트에 `build:server` 단계 누락
    - 해결: `build:ssg` 스크립트에 `build:server` 추가
 
+##### 4.6 GitHub Pages 배포 설정
+
+- **목표**: SSG 방식으로 빌드된 정적 파일을 GitHub Pages에 배포
+- **배포 URL**: https://jumoooo.github.io/front_7th_chapter4-1/
+
+**구현 내용:**
+
+1. **루트 index.html 생성**:
+   - Vanilla/React 선택 페이지
+   - 위치: 프로젝트 루트 `index.html`
+
+2. **GitHub Actions 워크플로우**:
+   - 위치: `.github/workflows/deploy.yml`
+   - 자동 배포: `main` 브랜치 push 시 자동 실행
+   - 빌드: Vanilla SSG + React SSG
+   - 배포: `dist/` 폴더를 GitHub Pages에 배포
+
+3. **배포 스크립트**:
+   - `package.json`에 `build:ssg` 스크립트 추가
+   - `package.json`에 `deploy` 스크립트 추가 (수동 배포용)
+
+**배포 디렉토리 구조:**
+
+```
+dist/
+├── index.html          # 루트 선택 페이지
+├── vanilla/            # Vanilla SSG 빌드 결과
+└── react/              # React SSG 빌드 결과
+```
+
+**주요 기능:**
+
+- SSG 방식으로만 빌드 (SSR 서버 불필요)
+- 자동 배포 (GitHub Actions)
+- 수동 배포 지원 (`pnpm run deploy`)
+- 현재 상태 유지 (테스트 통과, 린트 오류 없음)
+
 ---
 
 ## 📌 다음 단계
@@ -761,5 +798,6 @@ async function generatePage(routeInfo, template) {
 - [x] React SSR 서버 안전성 개선 (Router, createStorage, log, PageWrapper)
 - [x] React Hydration 구현
 - [x] React SSG 구현 (341개 페이지 생성 완료)
-- [ ] React SSR 테스트 통과 확인
-- [ ] React SSG 테스트 통과 확인
+- [x] React SSR 테스트 통과 확인
+- [x] React SSG 테스트 통과 확인
+- [x] GitHub Pages 배포 설정 (SSG 방식)
