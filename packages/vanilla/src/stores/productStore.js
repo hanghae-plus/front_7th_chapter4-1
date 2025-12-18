@@ -7,6 +7,8 @@ import { PRODUCT_ACTIONS } from "./actionTypes";
 export const initialProductState = {
   // 상품 목록
   products: [],
+  // 카테고리 목록
+  categories: {},
   totalCount: 0,
 
   // 상품 상세
@@ -17,9 +19,6 @@ export const initialProductState = {
   loading: true,
   error: null,
   status: "idle",
-
-  // 카테고리 목록
-  categories: {},
 };
 
 /**
