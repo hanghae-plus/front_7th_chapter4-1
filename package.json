@@ -19,6 +19,9 @@
     "test:e2e:advanced": "playwright test 'advanced'",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:report": "npx playwright show-report",
+    "test:e2e:csr": "TEST_ENV=csr playwright test 'advanced' --grep 'CSR E2E'",
+    "test:e2e:ssr": "TEST_ENV=ssr playwright test 'advanced' --grep 'SSR E2E'",
+    "test:e2e:ssg": "TEST_ENV=ssg playwright test 'advanced' --grep 'SSG E2E'",
     "prepare": "husky",
     "gh-pages": "pnpm run build && gh-pages -d dist"
   },
