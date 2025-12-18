@@ -1,9 +1,10 @@
-import { cartStore, uiStore } from "../stores";
-import { CartModal, Footer, Toast } from "../components";
+import { cartStore, uiStore } from "../stores/index.js";
+import { CartModal, Footer, Toast } from "../components/index.js";
 
-export const PageWrapper = ({ headerLeft, children }) => {
-  const cart = cartStore.getState();
-  const { cartModal, toast } = uiStore.getState();
+export const PageWrapper = ({ headerLeft, children, cart: cartInput, ui: uiInput }) => {
+  const cart = cartInput ?? cartStore.getState();
+  const uiState = uiInput ?? uiStore.getState();
+  const { cartModal, toast } = uiState;
   const cartSize = cart.items.length;
 
   const cartCount = `
