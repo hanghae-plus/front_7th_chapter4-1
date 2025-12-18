@@ -2,6 +2,9 @@ const lifeCycles = new WeakMap();
 const pageState = { current: null, previous: null };
 const initLifecycle = { mount: null, unmount: null, watches: [], deps: [], mounted: false };
 
+// 서버 환경 체크
+const isServer = typeof window === "undefined";
+
 // 페이지의 생명주기 상태를 가져오거나 초기화
 const getPageLifecycle = (page) => {
   if (!lifeCycles.has(page)) {
@@ -26,13 +29,15 @@ const depsChanged = (newDeps, oldDeps) => {
   return newDeps.some((dep, index) => dep !== oldDeps[index]);
 };
 
-// 페이지 마운트 처리
-const mount = (page) => {
+// 페이지 마운트 처리 (async 지원)
+const mount = async (page) => {
   const lifecycle = getPageLifecycle(page);
   if (lifecycle.mounted) return;
 
-  // 마운트 콜백들 실행
-  lifecycle.mount?.();
+  // 마운트 콜백들 실행 (async일 수 있음)
+  if (lifecycle.mount) {
+    await lifecycle.mount();
+  }
   lifecycle.mounted = true;
   lifecycle.deps = [];
 };
@@ -62,6 +67,26 @@ export const withLifecycle = ({ onMount, onUnmount, watches } = {}, page) => {
     lifecycle.watches = typeof watches[0] === "function" ? [watches] : watches;
   }
 
+  // 서버 환경에서는 async 함수 반환
+  if (isServer) {
+    return async (...args) => {
+      const wasNewPage = pageState.current !== page;
+
+      // 현재 페이지 설정
+      pageState.previous = pageState.current;
+      pageState.current = page;
+
+      // 서버에서는 항상 onMount 실행 후 렌더링
+      if (wasNewPage) {
+        await mount(page);
+      }
+
+      // 페이지 함수 실행
+      return page(...args);
+    };
+  }
+
+  // 클라이언트 환경에서는 동기 함수 (기존 동작)
   return (...args) => {
     const wasNewPage = pageState.current !== page;
 

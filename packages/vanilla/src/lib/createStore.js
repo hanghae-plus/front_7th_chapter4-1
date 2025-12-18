@@ -1,4 +1,4 @@
-import { createObserver } from "./createObserver";
+import { createObserver } from "./createObserver.js";
 
 /**
  * Redux-style Store 생성 함수
@@ -6,8 +6,14 @@ import { createObserver } from "./createObserver";
  * @param {*} initialState - 초기 상태
  * @returns {Object} { getState, dispatch, subscribe }
  */
-export const createStore = (reducer, initialState) => {
+export const createStore = (key, reducer, initialState) => {
   const { subscribe, notify } = createObserver();
+
+  if ("window" in globalThis) {
+    console.log("initialState", initialState);
+    console.log("initialData[key]", window.__INITIAL_DATA__?.[key]);
+    initialState = window.__INITIAL_DATA__?.[key] ?? initialState;
+  }
 
   let state = initialState;
 
@@ -15,6 +21,12 @@ export const createStore = (reducer, initialState) => {
 
   const dispatch = (action) => {
     const newState = reducer(state, action);
+
+    if (!("window" in globalThis)) {
+      console.log("newState", newState);
+      globalThis.initialData[key] = newState;
+    }
+
     if (newState !== state) {
       state = newState;
       notify();

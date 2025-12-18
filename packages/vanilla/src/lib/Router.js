@@ -14,10 +14,12 @@ export class Router {
     this.#route = null;
     this.#baseUrl = baseUrl.replace(/\/$/, "");
 
-    window.addEventListener("popstate", () => {
-      this.#route = this.#findRoute();
-      this.#observer.notify();
-    });
+    if ("window" in globalThis) {
+      window.addEventListener("popstate", () => {
+        this.#route = this.#findRoute();
+        this.#observer.notify();
+      });
+    }
   }
 
   get baseUrl() {
@@ -25,7 +27,7 @@ export class Router {
   }
 
   get query() {
-    return Router.parseQuery(window.location.search);
+    return Router.parseQuery(getSearch());
   }
 
   set query(newQuery) {
@@ -34,7 +36,7 @@ export class Router {
   }
 
   get params() {
-    return this.#route?.params ?? {};
+    return this.#route?.params ?? globalThis.params ?? {};
   }
 
   get route() {
@@ -73,8 +75,8 @@ export class Router {
     });
   }
 
-  #findRoute(url = window.location.pathname) {
-    const { pathname } = new URL(url, window.location.origin);
+  #findRoute(url = getPathname()) {
+    const { pathname } = new URL(url, getOrigin());
     for (const [routePath, route] of this.#routes) {
       const match = pathname.match(route.regex);
       if (match) {
@@ -103,7 +105,7 @@ export class Router {
       // baseUrl이 없으면 자동으로 붙여줌
       let fullUrl = url.startsWith(this.#baseUrl) ? url : this.#baseUrl + (url.startsWith("/") ? url : "/" + url);
 
-      const prevFullUrl = `${window.location.pathname}${window.location.search}`;
+      const prevFullUrl = `${getPathname()}${getSearch()}`;
 
       // 히스토리 업데이트
       if (prevFullUrl !== fullUrl) {
@@ -130,7 +132,9 @@ export class Router {
    * @param {string} search - location.search 또는 쿼리 문자열
    * @returns {Object} 파싱된 쿼리 객체
    */
-  static parseQuery = (search = window.location.search) => {
+  static parseQuery = (search) => {
+    search = getSearch() ?? window.location.search;
+
     const params = new URLSearchParams(search);
     const query = {};
     for (const [key, value] of params) {
@@ -166,6 +170,36 @@ export class Router {
     });
 
     const queryString = Router.stringifyQuery(updatedQuery);
-    return `${baseUrl}${window.location.pathname.replace(baseUrl, "")}${queryString ? `?${queryString}` : ""}`;
+    return `${baseUrl}${getPathname().replace(baseUrl, "")}${queryString ? `?${queryString}` : ""}`;
   };
+}
+
+function getOrigin() {
+  if ("window" in globalThis) {
+    return window.location.origin;
+  } else {
+    return globalThis.origin;
+  }
+}
+
+function getPathname() {
+  if ("window" in globalThis) {
+    return window.location.pathname;
+  } else {
+    return String(globalThis.pathname);
+  }
+}
+
+function getSearch() {
+  if ("window" in globalThis) {
+    return window.location.search;
+  } else {
+    if (Object.keys(globalThis.search).length > 0) {
+      return `?${Object.entries(globalThis.search)
+        .map(([key, value]) => `${key}=${value}`)
+        .join("&")}`;
+    } else {
+      return "";
+    }
+  }
 }

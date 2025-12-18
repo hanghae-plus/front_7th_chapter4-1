@@ -1,13 +1,13 @@
-import { ProductList, SearchBar } from "../components";
-import { productStore } from "../stores";
-import { router, withLifecycle } from "../router";
-import { loadProducts, loadProductsAndCategories } from "../services";
+import { ProductList, SearchBar } from "../components/index.js";
+import { productStore } from "../stores/index.js";
+import { router, withLifecycle } from "../router/index.js";
+import { loadProducts, loadProductsAndCategories } from "../services/index.js";
 import { PageWrapper } from "./PageWrapper.js";
 
 export const HomePage = withLifecycle(
   {
     onMount: () => {
-      loadProductsAndCategories();
+      return loadProductsAndCategories();
     },
     watches: [
       () => {
@@ -23,6 +23,8 @@ export const HomePage = withLifecycle(
     const { products, loading, error, totalCount, categories } = productState;
     const category = { category1, category2 };
     const hasMore = products.length < totalCount;
+
+    console.log(loading, totalCount);
 
     return PageWrapper({
       headerLeft: `
