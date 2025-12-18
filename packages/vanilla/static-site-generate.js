@@ -1,14 +1,19 @@
+process.env.NODE_ENV = "production";
+
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { render } from "./src/main-server.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const OUTPUT_DIR = path.resolve(__dirname, "../../dist/vanilla");
-
 const items = JSON.parse(fs.readFileSync("./src/mocks/items.json", "utf-8"));
+
+const { render } = await import("./src/main-server.js");
+const { BASE_URL } = await import("./src/constants.js");
+
+const TEMPLATE = fs.readFileSync(path.join(OUTPUT_DIR, "index.html"), "utf-8");
 
 // 디렉토리 생성
 function ensureDirectoryExists(path) {
@@ -21,8 +26,6 @@ function ensureDirectoryExists(path) {
 async function generatePage(url, outputPath) {
   try {
     const { html, head, initialData } = await render(url);
-    // build된 파일 기준으로
-    const template = fs.readFileSync(path.join(OUTPUT_DIR, "index.html"), "utf-8");
 
     const initialDataScript = `
     <script>
@@ -30,8 +33,7 @@ async function generatePage(url, outputPath) {
     </script>
     `;
 
-    const finalHtml = template
-      .replace("<!--app-head-->", head)
+    const finalHtml = TEMPLATE.replace("<!--app-head-->", head)
       .replace("<!--app-html-->", html)
       .replace("</head>", `${initialDataScript}</head>`);
 
@@ -45,10 +47,10 @@ async function generatePage(url, outputPath) {
 
 // ssg 실행
 async function generateStaticSite() {
-  await generatePage("/", path.join(OUTPUT_DIR, "index.html"));
+  await generatePage(BASE_URL, path.join(OUTPUT_DIR, "index.html"));
 
   for (const item of items) {
-    const url = `/product/${item.productId}/`;
+    const url = `${BASE_URL}product/${item.productId}/`;
     const outputPath = path.join(OUTPUT_DIR, "product", item.productId, "index.html");
     await generatePage(url, outputPath);
   }
