@@ -8,5 +8,7 @@ const defaultSelector = <T, S = T>(state: T) => state as unknown as S;
 
 export const useStore = <T, S = T>(store: Store<T>, selector: (state: T) => S = defaultSelector<T, S>) => {
   const shallowSelector = useShallowSelector(selector);
-  return useSyncExternalStore(store.subscribe, () => shallowSelector(store.getState()));
+  const getSnapshot = () => shallowSelector(store.getState());
+  // SSR을 위한 getServerSnapshot 추가 (서버에서도 동일한 상태 반환)
+  return useSyncExternalStore(store.subscribe, getSnapshot, getSnapshot);
 };

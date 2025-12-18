@@ -17,4 +17,10 @@ export interface Product {
   category2: string;
   category3?: string;
   category4?: string;
+  // 상세 정보 (상품 상세 API에서만 포함)
+  description?: string;
+  rating?: number;
+  reviewCount?: number;
+  stock?: number;
+  images?: string[];
 }

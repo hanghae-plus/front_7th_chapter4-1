@@ -127,3 +127,40 @@ const productReducer = (state: typeof initialProductState, action: any) => {
  * 상품 스토어 생성
  */
 export const productStore = createStore(productReducer, initialProductState);
+
+// ============================================
+// SSR 스토어 격리
+// ============================================
+
+type ProductStore = typeof productStore;
+
+// globalThis를 사용하여 Vite dev SSR에서 모듈 재로드 시에도 컨텍스트 유지
+declare global {
+  var __SSR_CONTEXT__: { store: ProductStore | null } | undefined;
+}
+
+/**
+ * SSR 컨텍스트
+ * - 현재 SSR 요청에서 사용할 스토어를 임시 저장
+ * - 렌더링 완료 후 반드시 null로 초기화해야 함
+ * - globalThis를 사용하여 Vite dev SSR에서도 동일한 컨텍스트 공유
+ */
+export const ssrContext: { store: ProductStore | null } =
+  globalThis.__SSR_CONTEXT__ || (globalThis.__SSR_CONTEXT__ = { store: null });
+
+/**
+ * 스토어 팩토리 함수
+ * - SSR에서 매 요청마다 새로운 스토어 인스턴스 생성
+ */
+export function createProductStore(): ProductStore {
+  return createStore(productReducer, initialProductState);
+}
+
+/**
+ * 활성 스토어 반환
+ * - SSR 환경이면 ssrContext.store 반환
+ * - CSR 환경이면 전역 productStore 반환
+ */
+export function getActiveStore(): ProductStore {
+  return ssrContext.store || productStore;
+}
