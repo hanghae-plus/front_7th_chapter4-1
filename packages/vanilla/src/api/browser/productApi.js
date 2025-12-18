@@ -1,3 +1,8 @@
+/**
+ * 브라우저 환경용 Product API
+ * MSW가 fetch를 가로채서 Mock 데이터를 반환합니다.
+ */
+
 export async function getProducts(params = {}) {
   const { limit = 20, search = "", category1 = "", category2 = "", sort = "price_asc" } = params;
   const page = params.current ?? params.page ?? 1;

@@ -1,10 +1,17 @@
+// SSR 환경에서 사용할 더미 스토리지
+const dummyStorage = {
+  getItem: () => null,
+  setItem: () => {},
+  removeItem: () => {},
+};
+
 /**
  * 로컬스토리지 추상화 함수
  * @param {string} key - 스토리지 키
- * @param {Storage} storage - 기본값은 localStorage
+ * @param {Storage} storage - 기본값은 localStorage (브라우저) 또는 더미 스토리지 (SSR)
  * @returns {Object} { get, set, reset }
  */
-export const createStorage = (key, storage = window.localStorage) => {
+export const createStorage = (key, storage = typeof window !== "undefined" ? window.localStorage : dummyStorage) => {
   const get = () => {
     try {
       const item = storage.getItem(key);

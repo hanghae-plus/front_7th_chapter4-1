@@ -1,4 +1,4 @@
-import { getCategories, getProduct, getProducts } from "../api/productApi";
+import { getCategories, getProduct, getProducts } from "../api/browser/productApi.js";
 import { initialProductState, productStore, PRODUCT_ACTIONS } from "../stores";
 import { router } from "../router";
 
