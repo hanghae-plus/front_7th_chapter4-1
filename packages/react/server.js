@@ -22,10 +22,10 @@ app.get("*all", async (req, res) => {
     const query = req.query;
 
     // App 렌더링
-    const appHtml = await render(url, query);
+    const result = await render(url, query);
 
     // 템플릿에 삽입
-    const html = template.replace("<!--app-html-->", appHtml);
+    const html = template.replace("<!--app-head-->", result.head).replace("<!--app-html-->", result.html);
 
     res.status(200).set({ "Content-Type": "text/html" }).send(html);
   } catch (e) {

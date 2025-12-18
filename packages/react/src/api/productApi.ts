@@ -2,6 +2,9 @@
 import type { Categories, Product } from "../entities";
 import type { StringRecord } from "../types.ts";
 
+// SSR에서는 절대 URL 필요
+const API_BASE = typeof window === "undefined" ? "http://localhost:5176" : "";
+
 interface ProductsResponse {
   products: Product[];
   pagination: {
@@ -33,19 +36,19 @@ export async function getProducts(params: StringRecord = {}): Promise<ProductsRe
     sort,
   });
 
-  const response = await fetch(`/api/products?${searchParams}`);
+  const response = await fetch(`${API_BASE}/api/products?${searchParams}`);
 
   return await response.json();
 }
 
 // 상품 상세 조회
 export async function getProduct(productId: string): Promise<Product> {
-  const response = await fetch(`/api/products/${productId}`);
+  const response = await fetch(`${API_BASE}/api/products/${productId}`);
   return await response.json();
 }
 
 // 카테고리 목록 조회
 export async function getCategories(): Promise<Categories> {
-  const response = await fetch("/api/categories");
+  const response = await fetch(`${API_BASE}/api/categories`);
   return await response.json();
 }
