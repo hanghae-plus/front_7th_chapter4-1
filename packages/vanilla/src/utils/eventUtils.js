@@ -27,6 +27,11 @@ const handleGlobalEvents = (e) => {
 };
 
 /**
+ * 등록된 이벤트 타입들을 추적
+ */
+const registeredEventTypes = new Set();
+
+/**
  * 전역 이벤트 리스너 등록 (한 번만 실행)
  */
 export const registerGlobalEvents = (() => {
@@ -37,7 +42,10 @@ export const registerGlobalEvents = (() => {
     }
 
     Object.keys(eventHandlers).forEach((eventType) => {
-      document.body.addEventListener(eventType, handleGlobalEvents);
+      if (!registeredEventTypes.has(eventType)) {
+        document.body.addEventListener(eventType, handleGlobalEvents);
+        registeredEventTypes.add(eventType);
+      }
     });
 
     initialized = true;
@@ -53,6 +61,12 @@ export const registerGlobalEvents = (() => {
 export const addEvent = (eventType, selector, handler) => {
   if (!eventHandlers[eventType]) {
     eventHandlers[eventType] = {};
+
+    // 이벤트 타입이 처음 추가되는 경우 즉시 리스너 등록
+    if (typeof document !== "undefined" && document.body && !registeredEventTypes.has(eventType)) {
+      document.body.addEventListener(eventType, handleGlobalEvents);
+      registeredEventTypes.add(eventType);
+    }
   }
 
   eventHandlers[eventType][selector] = handler;
