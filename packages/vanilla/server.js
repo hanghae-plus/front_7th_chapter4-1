@@ -2,6 +2,7 @@ import express from "express";
 import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
 import fs from "fs/promises";
+import { server as mswServer } from "./src/mocks/node.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -9,6 +10,11 @@ const __dirname = dirname(__filename);
 const prod = process.env.NODE_ENV === "production";
 const port = process.env.PORT || 5173;
 const base = process.env.BASE || (prod ? "/front_7th_chapter4-1/vanilla/" : "/");
+
+// MSW 서버 시작 (Node.js fetch 요청 인터셉트)
+mswServer.listen({
+  onUnhandledRequest: "bypass",
+});
 
 async function createServer() {
   const app = express();

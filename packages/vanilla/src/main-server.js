@@ -1,5 +1,5 @@
-import items from "./mocks/items.json";
 import { PRODUCT_ACTIONS } from "./stores/actionTypes.js";
+import { getProducts, getProduct, getCategories } from "./api/productApi.js";
 
 // ============================================
 // 1. ServerRouter 클래스
@@ -61,140 +61,7 @@ class ServerRouter {
 }
 
 // ============================================
-// 2. Mock 데이터 함수들 (서버용)
-// ============================================
-
-/**
- * 카테고리 추출
- */
-function getUniqueCategories() {
-  const categories = {};
-
-  items.forEach((item) => {
-    const cat1 = item.category1;
-    const cat2 = item.category2;
-
-    if (!categories[cat1]) categories[cat1] = {};
-    if (cat2 && !categories[cat1][cat2]) categories[cat1][cat2] = {};
-  });
-
-  return categories;
-}
-
-/**
- * 상품 필터링
- */
-function filterProducts(products, query) {
-  let filtered = [...products];
-
-  // 검색어 필터링
-  if (query.search) {
-    const searchTerm = query.search.toLowerCase();
-    filtered = filtered.filter(
-      (item) => item.title.toLowerCase().includes(searchTerm) || item.brand.toLowerCase().includes(searchTerm),
-    );
-  }
-
-  // 카테고리 필터링
-  if (query.category1) {
-    filtered = filtered.filter((item) => item.category1 === query.category1);
-  }
-  if (query.category2) {
-    filtered = filtered.filter((item) => item.category2 === query.category2);
-  }
-
-  // 정렬
-  if (query.sort) {
-    switch (query.sort) {
-      case "price_asc":
-        filtered.sort((a, b) => parseInt(a.lprice) - parseInt(b.lprice));
-        break;
-      case "price_desc":
-        filtered.sort((a, b) => parseInt(b.lprice) - parseInt(a.lprice));
-        break;
-      case "name_asc":
-        filtered.sort((a, b) => a.title.localeCompare(b.title, "ko"));
-        break;
-      case "name_desc":
-        filtered.sort((a, b) => b.title.localeCompare(a.title, "ko"));
-        break;
-      default:
-        filtered.sort((a, b) => parseInt(a.lprice) - parseInt(b.lprice));
-    }
-  }
-
-  return filtered;
-}
-
-/**
- * 상품 목록 조회 (서버용)
- */
-export function mockGetProducts(options = {}) {
-  const { page = 1, limit = 20, search = "", category1 = "", category2 = "", sort = "price_asc" } = options;
-
-  const filteredProducts = filterProducts(items, {
-    search,
-    category1,
-    category2,
-    sort,
-  });
-
-  const startIndex = (page - 1) * limit;
-  const endIndex = startIndex + limit;
-  const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
-
-  return {
-    products: paginatedProducts,
-    pagination: {
-      page,
-      limit,
-      total: filteredProducts.length,
-      totalPages: Math.ceil(filteredProducts.length / limit),
-      hasNext: endIndex < filteredProducts.length,
-      hasPrev: page > 1,
-    },
-  };
-}
-
-/**
- * 카테고리 목록 조회 (서버용)
- */
-export function mockGetCategories() {
-  return getUniqueCategories();
-}
-
-/**
- * 상품 상세 조회 (서버용)
- */
-export function mockGetProduct(productId) {
-  const product = items.find((item) => item.productId === productId);
-
-  if (!product) {
-    return null;
-  }
-
-  return {
-    ...product,
-    description: `${product.title}에 대한 상세 설명입니다. ${product.brand} 브랜드의 우수한 품질을 자랑하는 상품으로, 고객 만족도가 높은 제품입니다.`,
-    rating: 4,
-    reviewCount: 500,
-    stock: 50,
-    images: [product.image, product.image.replace(".jpg", "_2.jpg"), product.image.replace(".jpg", "_3.jpg")],
-  };
-}
-
-/**
- * 관련 상품 조회 (같은 카테고리)
- */
-export function mockGetRelatedProducts(productId, limit = 20) {
-  const product = items.find((item) => item.productId === productId);
-  if (!product) return [];
-
-  return items.filter((item) => item.productId !== productId && item.category1 === product.category1).slice(0, limit);
-}
-
-// ============================================
-// 3. 서버용 Store 생성
+// 2. 서버용 Store 생성
 // ============================================
 
 function createServerStore(initialState) {
@@ -678,15 +545,17 @@ export async function render(url) {
     const limit = parseInt(query.limit) || 20;
     const page = parseInt(query.page) || 1;
 
-    const productsData = mockGetProducts({
-      page,
-      limit,
-      search: query.search || "",
-      category1: query.category1 || "",
-      category2: query.category2 || "",
-      sort: query.sort || "price_asc",
-    });
-    const categories = mockGetCategories();
+    const [productsData, categories] = await Promise.all([
+      getProducts({
+        page,
+        limit,
+        search: query.search || "",
+        category1: query.category1 || "",
+        category2: query.category2 || "",
+        sort: query.sort || "price_asc",
+      }),
+      getCategories(),
+    ]);
 
     stores.productStore.dispatch({
       type: PRODUCT_ACTIONS.SETUP,
@@ -706,10 +575,16 @@ export async function render(url) {
     };
   } else if (routePath === "/product/:id/") {
     // 상품 상세 페이지
-    const product = mockGetProduct(params.id);
-    const relatedProducts = mockGetRelatedProducts(params.id);
+    const product = await getProduct(params.id);
 
-    if (product) {
+    if (product && !product.error) {
+      // 관련 상품 조회 (같은 카테고리)
+      const relatedData = await getProducts({
+        category1: product.category1,
+        limit: 20,
+      });
+      const relatedProducts = relatedData.products.filter((p) => p.productId !== params.id);
+
       stores.productStore.dispatch({
         type: PRODUCT_ACTIONS.SET_CURRENT_PRODUCT,
         payload: product,

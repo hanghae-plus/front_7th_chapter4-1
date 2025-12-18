@@ -1,112 +1,137 @@
-import fs from "fs/promises";
-import path from "path";
+import { readFileSync, writeFileSync, mkdirSync } from "fs";
+import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { createServer } from "vite";
+import { server as mswServer } from "./src/mocks/node.js";
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = dirname(__filename);
 
-// 빌드 경로 설정
-const DIST_DIR = path.resolve(__dirname, "../../dist/vanilla");
-const SSR_DIR = path.resolve(__dirname, "dist/vanilla-ssr");
+const DIST_DIR = join(__dirname, "../../dist/vanilla");
+const TEMPLATE_PATH = join(__dirname, "../../dist/vanilla/index.html");
 
 /**
- * 디렉토리 생성 (존재하지 않으면)
+ * 정적 사이트 생성
  */
-async function ensureDir(dirPath) {
+async function generateStaticSite() {
+  console.log("정적 사이트 생성 시작...");
+
+  let vite;
   try {
-    await fs.mkdir(dirPath, { recursive: true });
-  } catch (err) {
-    if (err.code !== "EEXIST") throw err;
+    // 1. MSW 서버 시작
+    mswServer.listen({
+      onUnhandledRequest: "bypass",
+    });
+    console.log("MSW 서버 시작 완료");
+
+    // 2. Vite 서버 생성
+    vite = await createServer({
+      server: { middlewareMode: true },
+      appType: "custom",
+    });
+
+    // 3. 렌더 함수 로드 (Vite를 통해 모든 import 처리)
+    const { render } = await vite.ssrLoadModule("./src/main-server.js");
+
+    // 4. 템플릿 로드
+    const template = readFileSync(TEMPLATE_PATH, "utf-8");
+    console.log("HTML 템플릿 로드 완료");
+
+    // 5. 페이지 목록 생성
+    const pages = await getPages(vite);
+    console.log(`총 ${pages.length}개 페이지 생성 예정`);
+
+    // 6. 각 페이지 렌더링 및 저장
+    for (const page of pages) {
+      console.log(`페이지 생성 중: ${page.url}`);
+
+      try {
+        const { html, head, initialData } = await render(page.url, page.query || {});
+
+        // 초기 데이터 스크립트 생성
+        const initialDataScript = `
+          <script>
+            window.__INITIAL_DATA__ = ${JSON.stringify(initialData)};
+          </script>
+        `;
+
+        // HTML 템플릿 치환
+        const finalHtml = template
+          .replace("<!--app-head-->", head)
+          .replace("<!--app-html-->", html)
+          .replace("</head>", `${initialDataScript}</head>`);
+
+        // 디렉토리 생성 (필요한 경우)
+        const dir = dirname(page.filePath);
+        mkdirSync(dir, { recursive: true });
+
+        // 파일 저장
+        writeFileSync(page.filePath, finalHtml, "utf-8");
+        console.log(`✓ ${page.filePath} 생성 완료`);
+      } catch (error) {
+        console.error(`페이지 생성 실패 (${page.url}):`, error);
+      }
+    }
+
+    console.log("정적 사이트 생성 완료!");
+  } catch (error) {
+    console.error("정적 사이트 생성 오류:", error);
+    process.exit(1);
+  } finally {
+    // Vite 서버와 MSW 서버 정리
+    if (vite) {
+      await vite.close();
+    }
+    mswServer.close();
   }
 }
 
 /**
- * HTML 파일 저장
+ * 생성할 페이지 목록 반환
  */
-async function saveHtmlFile(filePath, html) {
-  const dir = path.dirname(filePath);
-  await ensureDir(dir);
-  await fs.writeFile(filePath, html, "utf-8");
-  console.log(`  Generated: ${filePath}`);
-}
-
-/**
- * 생성할 페이지 목록 가져오기
- */
-async function getPages(mockGetProducts) {
-  // 모든 상품 가져오기 (limit을 크게 설정)
-  const productsData = mockGetProducts({ limit: 1000 });
-  const products = productsData.products;
-
+async function getPages(vite) {
   const pages = [
     // 홈페이지
-    { url: "/", filePath: path.join(DIST_DIR, "index.html") },
+    {
+      url: "/",
+      filePath: join(DIST_DIR, "index.html"),
+      query: {},
+    },
     // 404 페이지
-    { url: "/404", filePath: path.join(DIST_DIR, "404.html") },
+    {
+      url: "/404",
+      filePath: join(DIST_DIR, "404.html"),
+      query: {},
+    },
   ];
 
-  // 상품 상세 페이지들
-  for (const product of products) {
-    pages.push({
-      url: `/product/${product.productId}/`,
-      filePath: path.join(DIST_DIR, "product", product.productId, "index.html"),
-    });
+  try {
+    // 상품 목록 조회 (동적 라우트용) - Vite를 통해 로드
+    const { getProducts } = await vite.ssrLoadModule("./src/api/productApi.js");
+    const productsResponse = await getProducts({ limit: 20, page: 1 });
+    const products = productsResponse.products;
+
+    // 상품 상세 페이지들 추가
+    for (const product of products) {
+      pages.push({
+        url: `/product/${product.productId}/`,
+        filePath: join(DIST_DIR, "product", product.productId, "index.html"),
+        query: {},
+      });
+    }
+
+    console.log(`${products.length}개 상품 상세 페이지 추가`);
+  } catch (error) {
+    console.error("상품 목록 조회 실패:", error);
+    // 상품 목록 조회 실패해도 기본 페이지들은 생성
   }
 
   return pages;
 }
 
-/**
- * 정적 사이트 생성 메인 함수
- */
-async function generateStaticSite() {
-  console.log("🚀 Starting Static Site Generation...\n");
-
-  try {
-    // 1. 템플릿 읽기
-    console.log("📄 Loading template...");
-    const template = await fs.readFile(path.join(DIST_DIR, "index.html"), "utf-8");
-
-    // 2. SSR 모듈 로드
-    console.log("📦 Loading SSR module...");
-    const ssrModule = await import(path.join(SSR_DIR, "main-server.js"));
-    const { render, mockGetProducts } = ssrModule;
-
-    // 3. 페이지 목록 생성
-    console.log("📋 Generating page list...");
-    const pages = await getPages(mockGetProducts);
-    console.log(`   Found ${pages.length} pages to generate\n`);
-
-    // 4. 각 페이지 렌더링 및 저장
-    console.log("🔨 Generating pages...");
-    for (const page of pages) {
-      try {
-        // 렌더링
-        const { html: appHtml, head, initialData } = await render(page.url);
-
-        // initialData 스크립트 생성
-        const initialDataScript = `<script>window.__INITIAL_DATA__ = ${JSON.stringify(initialData)};</script>`;
-
-        // 템플릿 치환
-        const finalHtml = template
-          .replace("<!--app-head-->", head)
-          .replace("<!--app-html-->", appHtml)
-          .replace("</head>", `${initialDataScript}</head>`);
-
-        // 파일 저장
-        await saveHtmlFile(page.filePath, finalHtml);
-      } catch (err) {
-        console.error(`  Error generating ${page.url}:`, err.message);
-      }
-    }
-
-    console.log("\n✅ Static Site Generation completed!");
-    console.log(`   Total pages: ${pages.length}`);
-  } catch (err) {
-    console.error("❌ Static Site Generation failed:", err);
-    process.exit(1);
-  }
+// 스크립트 직접 실행 시
+if (import.meta.url === `file://${process.argv[1]}`) {
+  generateStaticSite();
 }
 
-// 실행
-generateStaticSite();
+export { generateStaticSite };
