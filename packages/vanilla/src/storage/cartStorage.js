@@ -1,3 +1,4 @@
-import { createStorage } from "../lib";
+import { createStorage, createMemoryStorage } from "../lib";
+import { isServer } from "../constants";
 
-export const cartStorage = createStorage("shopping_cart");
+export const cartStorage = isServer ? createMemoryStorage() : createStorage("shopping_cart");

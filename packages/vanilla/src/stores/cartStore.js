@@ -44,7 +44,14 @@ const findCartItem = (items, productId) => {
  * @param {CartAction} action - 액션 객체
  */
 const cartReducer = (_, action) => {
-  const state = cartStorage.get() ?? initialState;
+  // 서버 환경에서는 localStorage가 없으므로 초기 상태 사용
+  let state;
+  try {
+    state = cartStorage.get() ?? initialState;
+  } catch {
+    // 서버 환경에서 localStorage 접근 실패 시 초기 상태 사용
+    state = initialState;
+  }
   switch (action.type) {
     case CART_ACTIONS.ADD_ITEM: {
       const { product, quantity = 1 } = action.payload;

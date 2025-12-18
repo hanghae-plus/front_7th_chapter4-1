@@ -1,7 +1,10 @@
 import { productStore } from "../stores";
 import { loadProductDetailForPage } from "../services";
-import { router, withLifecycle } from "../router";
+import { router } from "../router";
+import { withLifecycle } from "../router/withLifecycle.js";
 import { PageWrapper } from "./PageWrapper.js";
+import { getProduct } from "../api/productApi.js";
+import { hydrateStoreFromSSR, hasProductDetailData } from "../utils/hydration.js";
 
 const loadingContent = `
   <div class="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -236,13 +239,42 @@ function ProductDetail({ product, relatedProducts = [] }) {
  */
 export const ProductDetailPage = withLifecycle(
   {
+    ssr: async (params) => {
+      const ctx = params?.params?.ctx;
+      const productId = params.params?.id;
+      if (!productId) {
+        return (ctx?.store || productStore).getState();
+      }
+      await loadProductDetailForPage(productId, ctx);
+      return (ctx?.store || productStore).getState();
+    },
+    metadata: async (params) => {
+      try {
+        const product = await getProduct(params.params?.id);
+        return {
+          title: `${product.title} - 쇼핑몰`,
+        };
+      } catch (error) {
+        console.error("상품 정보 로드 실패:", error);
+        return { title: "상품 상세 - 쇼핑몰" };
+      }
+    },
     onMount: () => {
-      loadProductDetailForPage(router.params.id);
+      const productId = router.params.id;
+
+      const hydrated = hydrateStoreFromSSR();
+
+      if (hydrated && hasProductDetailData(productId)) {
+        return;
+      }
+
+      loadProductDetailForPage(productId);
     },
     watches: [() => [router.params.id], () => loadProductDetailForPage(router.params.id)],
   },
-  () => {
-    const { currentProduct: product, relatedProducts = [], error, loading } = productStore.getState();
+  (params, props) => {
+    const state = props?.data || productStore.getState();
+    const { currentProduct: product, relatedProducts = [], error, loading } = state;
 
     return PageWrapper({
       headerLeft: `

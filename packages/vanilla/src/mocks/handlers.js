@@ -1,5 +1,5 @@
 import { http, HttpResponse } from "msw";
-import items from "./items.json";
+import items from "./items.json" with { type: "json" };
 
 const delay = async () => await new Promise((resolve) => setTimeout(resolve, 200));
 
@@ -64,7 +64,7 @@ function filterProducts(products, query) {
 
 export const handlers = [
   // 상품 목록 API
-  http.get("/api/products", async ({ request }) => {
+  http.get("*/api/products", async ({ request }) => {
     const url = new URL(request.url);
     const page = parseInt(url.searchParams.get("page") ?? url.searchParams.get("current")) || 1;
     const limit = parseInt(url.searchParams.get("limit")) || 20;
@@ -111,7 +111,7 @@ export const handlers = [
   }),
 
   // 상품 상세 API
-  http.get("/api/products/:id", ({ params }) => {
+  http.get("*/api/products/:id", ({ params }) => {
     const { id } = params;
     const product = items.find((item) => item.productId === id);
 
@@ -120,9 +120,11 @@ export const handlers = [
     }
 
     // 상세 정보에 추가 데이터 포함
+    // description은 items.json에 없으면 생성하지 않음 (UI에서 선택적 표시)
     const detailProduct = {
       ...product,
-      description: `${product.title}에 대한 상세 설명입니다. ${product.brand} 브랜드의 우수한 품질을 자랑하는 상품으로, 고객 만족도가 높은 제품입니다.`,
+      // description은 원본 데이터에 있으면 사용, 없으면 undefined (UI에서 처리)
+      ...(product.description && { description: product.description }),
       rating: Math.floor(Math.random() * 2) + 4, // 4~5점 랜덤
       reviewCount: Math.floor(Math.random() * 1000) + 50, // 50~1050개 랜덤
       stock: Math.floor(Math.random() * 100) + 10, // 10~110개 랜덤
@@ -133,7 +135,7 @@ export const handlers = [
   }),
 
   // 카테고리 목록 API
-  http.get("/api/categories", async () => {
+  http.get("*/api/categories", async () => {
     const categories = getUniqueCategories();
     await delay();
     return HttpResponse.json(categories);
