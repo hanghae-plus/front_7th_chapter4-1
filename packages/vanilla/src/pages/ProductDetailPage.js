@@ -1,7 +1,15 @@
-import { productStore } from "../stores";
+import { productStore as clientProductStore } from "../stores";
 import { loadProductDetailForPage } from "../services";
-import { router, withLifecycle } from "../router";
+import { router as clientRouter, withLifecycle } from "../router";
 import { PageWrapper } from "./PageWrapper.js";
+
+// 서버 환경 감지 및 context 가져오기
+const getContext = () => {
+  if (typeof global !== "undefined" && global.serverContext) {
+    return global.serverContext;
+  }
+  return { productStore: clientProductStore, router: clientRouter };
+};
 
 const loadingContent = `
   <div class="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -237,17 +245,31 @@ function ProductDetail({ product, relatedProducts = [] }) {
 export const ProductDetailPage = withLifecycle(
   {
     onMount: () => {
-      loadProductDetailForPage(router.params.id);
+      // 서버 환경에서는 실행하지 않음
+      if (typeof window !== "undefined") {
+        loadProductDetailForPage(clientRouter.params.id);
+      }
     },
-    watches: [() => [router.params.id], () => loadProductDetailForPage(router.params.id)],
+    watches: [
+      () => {
+        if (typeof window === "undefined") return [];
+        return [clientRouter.params.id];
+      },
+      () => {
+        if (typeof window !== "undefined") {
+          loadProductDetailForPage(clientRouter.params.id);
+        }
+      },
+    ],
   },
   () => {
+    const { productStore } = getContext();
     const { currentProduct: product, relatedProducts = [], error, loading } = productStore.getState();
 
     return PageWrapper({
       headerLeft: `
         <div class="flex items-center space-x-3">
-          <button onclick="window.history.back()" 
+          <button onclick="window.history.back()"
                   class="p-2 text-gray-700 hover:text-gray-900 transition-colors">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
