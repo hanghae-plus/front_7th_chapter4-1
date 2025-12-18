@@ -1,6 +1,5 @@
 import fs from "node:fs/promises";
 import express from "express";
-import { render } from "./src/main-server.js";
 
 const prod = process.env.NODE_ENV === "production";
 const port = process.env.PORT || 5173;
@@ -30,17 +29,28 @@ if (!prod) {
 }
 
 // SSR Render
-app.get("*", async (req, res) => {
+app.get("*all", async (req, res) => {
   const url = req.originalUrl.replace(base, "");
-  const { html, head, initialDataScript } = await render(url);
 
-  // Template 치환
-  const finalHtml = templateHtml
-    .replace("<!--app-head-->", head)
-    .replace("<!--app-html-->", html)
-    .replace("</head>", `${initialDataScript}</head>`);
+  /** @type {string} */
+  let template;
+  /** @type {import('./src/entry-server.js').render} */
+  let render;
+  if (!prod) {
+    // Always read fresh template in development
+    template = await fs.readFile("./index.html", "utf-8");
+    template = await vite.transformIndexHtml(url, template);
+    render = (await vite.ssrLoadModule("/src/main-server.js")).render;
+  } else {
+    template = templateHtml;
+    render = (await import("./dist/server/main-server.js")).render;
+  }
 
-  res.send(finalHtml);
+  const rendered = await render(url);
+
+  const html = template.replace(`<!--app-head-->`, rendered.head ?? "").replace(`<!--app-html-->`, rendered.html ?? "");
+
+  res.send(html);
 });
 
 // Start http server
