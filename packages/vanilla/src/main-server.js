@@ -10,7 +10,6 @@ import { ProductList } from "./components/ProductList.js";
 import { Logo } from "./components/Logo.js";
 import { Footer } from "./components/Footer.js";
 import { CartModal } from "./components/CartModal.js";
-import { Toast } from "./components/Toast.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -223,15 +222,13 @@ function renderLayout(title, content) {
 
       ${Footer()}
       
-      <!-- CartModal 컴포넌트 - 초기에는 isOpen=false로 숨김 -->
+      <!-- 🎯 CartModal 컴포넌트 - 초기에는 isOpen=false로 숨김 -->
       <div id="cart-modal-container">
         ${CartModal({ items: [], selectedAll: false, isOpen: false })}
       </div>
       
-      <!-- Toast 컴포넌트 - 초기에는 isVisible=false로 숨김 -->
-      <div id="toast-container">
-        ${Toast({ isVisible: false, message: "", type: "info" })}
-      </div>
+      <!-- 🎯 Toast 컨테이너 - 클라이언트에서 동적으로 렌더링 -->
+      <div id="toast-container"></div>
     </div>
   `;
 }
