@@ -1,6 +1,6 @@
-import { productStore } from "../stores";
-import { loadProductDetailForPage } from "../services";
-import { router, withLifecycle } from "../router";
+import { productStore } from "../stores/index.js";
+import { loadProductDetailForPage } from "../services/index.js";
+import { router, withLifecycle } from "../router/index.js";
 import { PageWrapper } from "./PageWrapper.js";
 
 const loadingContent = `

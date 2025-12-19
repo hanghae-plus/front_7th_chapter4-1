@@ -1,6 +1,6 @@
-import { getCategories, getProduct, getProducts } from "../api/productApi";
-import { initialProductState, productStore, PRODUCT_ACTIONS } from "../stores";
-import { router } from "../router";
+import { getCategories, getProduct, getProducts } from "../api/productApi.js";
+import { initialProductState, productStore, PRODUCT_ACTIONS } from "../stores/index.js";
+import { router } from "../router/index.js";
 
 export const loadProductsAndCategories = async () => {
   router.query = { current: undefined }; // 항상 첫 페이지로 초기화
@@ -147,9 +147,27 @@ export const loadProductDetailForPage = async (productId) => {
       payload: product,
     });
 
+    // 타이틀 업데이트 (명시적으로 호출, 비동기로 처리하여 render() 이후에 실행되도록)
+    if (typeof document !== "undefined" && product && product.title) {
+      // setTimeout을 사용하여 배치 처리 이후에 실행되도록 보장
+      // 관련 상품 로드가 완료된 후에도 타이틀을 다시 확인하도록 더 긴 지연 시간 사용
+      setTimeout(() => {
+        document.title = product.title;
+      }, 50);
+    }
+
     // 관련 상품 로드 (같은 category2 기준)
     if (product.category2) {
       await loadRelatedProducts(product.category2, productId);
+    }
+
+    // 관련 상품 로드 후에도 타이틀 재확인 (덮어써지지 않도록)
+    if (typeof document !== "undefined" && product && product.title) {
+      setTimeout(() => {
+        if (document.title !== product.title) {
+          document.title = product.title;
+        }
+      }, 100);
     }
   } catch (error) {
     console.error("상품 상세 페이지 로드 실패:", error);

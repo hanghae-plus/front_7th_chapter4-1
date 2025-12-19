@@ -8,6 +8,15 @@ const createErrorMessage = (error: unknown, defaultMessage = "알 수 없는 오
   error instanceof Error ? error.message : defaultMessage;
 
 export const loadProductsAndCategories = async () => {
+  // SSR에서 이미 데이터가 로드된 경우 다시 로드하지 않음
+  const hasInitialData = typeof window !== "undefined" && window.__INITIAL_DATA__;
+  if (hasInitialData) {
+    const initialState = window.__INITIAL_DATA__;
+    if (initialState?.productStore && initialState.productStore.products?.length > 0) {
+      return; // 이미 데이터가 있으면 리턴
+    }
+  }
+
   router.query = { current: undefined }; // 항상 첫 페이지로 초기화
   productStore.dispatch({
     type: PRODUCT_ACTIONS.SETUP,
@@ -105,12 +114,27 @@ export const setLimit = (limit: number) => {
 export const loadProductDetailForPage = async (productId: string) => {
   try {
     const currentProduct = productStore.getState().currentProduct;
+
+    // SSR에서 이미 데이터가 로드된 경우 다시 로드하지 않음
     if (productId === currentProduct?.productId) {
       // 관련 상품 로드 (같은 category2 기준)
       if (currentProduct.category2) {
         await loadRelatedProducts(currentProduct.category2, productId);
       }
       return;
+    }
+
+    // SSR에서 이미 데이터가 로드된 경우 체크
+    const hasInitialData = typeof window !== "undefined" && window.__INITIAL_DATA__;
+    if (hasInitialData) {
+      const initialState = window.__INITIAL_DATA__;
+      if (initialState?.productStore?.currentProduct?.productId === productId) {
+        // 관련 상품만 로드
+        if (initialState.productStore.currentProduct.category2) {
+          await loadRelatedProducts(initialState.productStore.currentProduct.category2, productId);
+        }
+        return;
+      }
     }
     // 현재 상품 클리어
     productStore.dispatch({

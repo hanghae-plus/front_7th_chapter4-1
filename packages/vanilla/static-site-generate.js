@@ -1,19 +1,135 @@
 import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
-const render = () => {
-  return `<div>안녕하세요</div>`;
-};
+// SSG 빌드 환경 변수 설정
+process.env.SSG_BUILD = "true";
 
+// MSW 서버 초기화 (SSG 빌드 타임에 fetch를 intercept하기 위해)
+import { server } from "./src/mocks/node.js";
+server.listen({ onUnhandledRequest: "bypass" });
+
+import { render } from "./src/main-server.js";
+import { filterProducts } from "./src/utils/productFilter.js";
+import { injectIntoTemplate } from "./src/utils/htmlUtils.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const itemsPath = path.join(__dirname, "src", "mocks", "items.json");
+
+function loadItems() {
+  try {
+    const raw = fs.readFileSync(itemsPath, "utf-8");
+    return JSON.parse(raw);
+  } catch (error) {
+    console.error("items.json을 읽는 동안 오류 발생:", error);
+    throw error;
+  }
+}
+
+const items = loadItems();
+
+// SSG 빌드 시 global.apiItems 설정 (main-server.js에서 사용)
+global.apiItems = items;
+
+// HTML 템플릿 경로
+const templatePath = path.join(__dirname, "index.html");
+// 출력 디렉토리
+const outputDir = path.join(__dirname, "../../dist/vanilla");
+
+/**
+ * SSG: 정적 사이트 생성
+ * 홈페이지와 모든 상품 상세 페이지를 빌드 타임에 생성
+ */
 async function generateStaticSite() {
-  // HTML 템플릿 읽기
-  const template = fs.readFileSync("../../dist/vanilla/index.html", "utf-8");
+  console.log("🚀 SSG 빌드 시작...");
 
-  // 어플리케이션 렌더링하기
-  const appHtml = render();
+  // 출력 디렉토리 생성
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
 
-  // 결과 HTML 생성하기
-  const result = template.replace("<!--app-html-->", appHtml);
-  fs.writeFileSync("../../dist/vanilla/index.html", result);
+  // 빌드된 HTML 템플릿 읽기 (Vite가 번들된 스크립트 경로로 업데이트한 것)
+  const builtTemplatePath = path.join(outputDir, "index.html");
+  let template;
+  if (fs.existsSync(builtTemplatePath)) {
+    template = fs.readFileSync(builtTemplatePath, "utf-8");
+    console.log("✅ 빌드된 HTML 템플릿 사용");
+  } else {
+    // 빌드된 템플릿이 없으면 원본 사용 (fallback)
+    template = fs.readFileSync(templatePath, "utf-8");
+    console.warn("⚠️  빌드된 HTML 템플릿을 찾을 수 없어 원본 템플릿 사용");
+  }
+
+  try {
+    // 1. 홈페이지 생성
+    console.log("📄 홈페이지 생성 중...");
+    const homeResult = await render("/", {});
+    const homeHtml = injectIntoTemplate(template, {
+      html: homeResult.html,
+      initialState: homeResult.initialState,
+      title: homeResult.title || "쇼핑몰 - 홈",
+    });
+    fs.writeFileSync(path.join(outputDir, "index.html"), homeHtml);
+    console.log("✅ 홈페이지 생성 완료");
+
+    // 2. 모든 상품 목록 가져오기
+    console.log("📦 상품 목록 가져오는 중...");
+    const allProducts = filterProducts(items, { sort: "price_asc" });
+    console.log(`✅ ${allProducts.length}개의 상품 발견`);
+
+    // 3. 각 상품 상세 페이지 생성
+    console.log("📄 상품 상세 페이지 생성 중...");
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const product of allProducts) {
+      try {
+        const productId = product.productId;
+        const productResult = await render(`/product/${productId}/`, {});
+
+        // 상품 상세 페이지 디렉토리 생성
+        const productDir = path.join(outputDir, "product", productId.toString());
+        fs.mkdirSync(productDir, { recursive: true });
+
+        // HTML 생성
+        const productHtml = injectIntoTemplate(template, {
+          html: productResult.html,
+          initialState: productResult.initialState,
+          title: productResult.title || "상품 상세 - 쇼핑몰",
+        });
+
+        // index.html로 저장 (깔끔한 URL을 위해)
+        fs.writeFileSync(path.join(productDir, "index.html"), productHtml);
+        successCount++;
+      } catch (error) {
+        console.error(`❌ 상품 ${product.productId} 페이지 생성 실패:`, error.message);
+        if (error.stack) {
+          console.error(`   스택:`, error.stack.split("\n").slice(0, 3).join("\n"));
+        }
+        errorCount++;
+      }
+    }
+
+    console.log(`✅ 상품 상세 페이지 생성 완료: ${successCount}개 성공, ${errorCount}개 실패`);
+
+    // 4. 404 페이지 생성
+    console.log("📄 404 페이지 생성 중...");
+    const notFoundResult = await render("/404", {});
+    const notFoundHtml = injectIntoTemplate(template, {
+      html: notFoundResult.html,
+      initialState: notFoundResult.initialState,
+      title: notFoundResult.title || "페이지를 찾을 수 없습니다 - 쇼핑몰",
+    });
+    fs.writeFileSync(path.join(outputDir, "404.html"), notFoundHtml);
+    console.log("✅ 404 페이지 생성 완료");
+
+    console.log("🎉 SSG 빌드 완료!");
+    console.log(`📁 출력 디렉토리: ${outputDir}`);
+  } catch (error) {
+    console.error("❌ SSG 빌드 실패:", error);
+    process.exit(1);
+  }
 }
 
 // 실행
