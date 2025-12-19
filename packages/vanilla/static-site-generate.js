@@ -139,44 +139,40 @@ function setupFetchPolyfill() {
 }
 
 // 프로덕션 설정
-const BASE_URL = "/front_7th_chapter4-1/vanilla";
 const DIST_DIR = path.resolve(__dirname, "../../dist/vanilla");
 const ORIGIN = "http://localhost:3000"; // SSG 빌드 시 임시 origin
 
+// HTML 템플릿 로드 (Vite 빌드 결과 사용)
+let htmlTemplate = null;
+
+function loadHtmlTemplate() {
+  if (!htmlTemplate) {
+    const templatePath = path.resolve(DIST_DIR, "index.html");
+    htmlTemplate = fs.readFileSync(templatePath, "utf-8");
+  }
+  return htmlTemplate;
+}
+
 // HTML 템플릿 생성 함수
-function createHtmlTemplate({ html, title, metaTags, initialData, styles }) {
-  return `<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${title}</title>
-  ${metaTags}
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    ${styles}
-  </style>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: '#3b82f6',
-            secondary: '#6b7280'
-          }
-        }
-      }
-    }
-  </script>
-</head>
-<body class="bg-gray-50">
-  <div id="root">${html}</div>
-  <script type="module" src="${BASE_URL}/src/main.js"></script>
-  <script>
+function createHtmlTemplate({ html, title, metaTags, initialData }) {
+  const template = loadHtmlTemplate();
+
+  // Vite 빌드된 템플릿에서 필요한 부분만 치환
+  let result = template
+    .replace("<title>Document</title>", `<title>${title}</title>`)
+    .replace("<!--app-head-->", metaTags)
+    .replace("<!--app-html-->", html);
+
+  // </body> 태그 직전에 initialData 스크립트 주입
+  result = result.replace(
+    "</body>",
+    `  <script>
     window.__INITIAL_DATA__ = ${JSON.stringify(initialData)};
   </script>
-</body>
-</html>`;
+</body>`,
+  );
+
+  return result;
 }
 
 // 페이지 렌더링 함수
@@ -215,15 +211,11 @@ async function renderPage(route, params = {}, query = {}) {
   <meta property="og:image" content="${meta.image}" />`;
   }
 
-  // CSS 읽기
-  const styles = fs.readFileSync(path.resolve(__dirname, "./src/styles.css"), "utf-8");
-
   return createHtmlTemplate({
     html,
     title,
     metaTags,
     initialData: context.initialData,
-    styles,
   });
 }
 
