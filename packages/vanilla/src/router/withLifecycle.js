@@ -36,7 +36,16 @@ const mount = (page) => {
   // 마운트 콜백들 실행
   lifecycle.mount?.();
   lifecycle.mounted = true;
-  lifecycle.deps = [];
+
+  // watches의 초기 deps 저장 (다음 변경 감지를 위해)
+  if (lifecycle.watches) {
+    lifecycle.deps = lifecycle.watches.map(([getDeps]) => {
+      const deps = getDeps();
+      return Array.isArray(deps) ? [...deps] : [];
+    });
+  } else {
+    lifecycle.deps = [];
+  }
 };
 
 // 페이지 언마운트 처리
