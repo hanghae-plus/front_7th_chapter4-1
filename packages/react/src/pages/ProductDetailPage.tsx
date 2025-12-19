@@ -1,9 +1,17 @@
-import { ProductDetail, useLoadProductDetail, useProductStore } from "../entities";
+import { ProductDetail, useLoadProductDetail, useProductStore, type Product } from "../entities";
 import { PageWrapper } from "./PageWrapper";
 import { ErrorContent, PublicImage } from "../components";
+import { getProduct } from "../api/productApi";
+import type { MemoryRouterInstance } from "@hanghae-plus/lib";
+import { getRelatedProducts } from "../entities/products/productUseCase";
 
-export const ProductDetailPage = () => {
-  const { currentProduct: product, error, loading } = useProductStore();
+export const ProductDetailPage = ({
+  serversideProps,
+}: {
+  serversideProps: { currentProduct: Product; relatedProducts: Product[]; error: string | null; loading: boolean };
+}) => {
+  const storeState = useProductStore();
+  const { currentProduct: product, error, loading } = serversideProps ?? storeState;
 
   useLoadProductDetail();
 
@@ -35,8 +43,16 @@ export const ProductDetailPage = () => {
           </div>
         )}
         {error && <ErrorContent error={error} />}
-        {product && <ProductDetail {...product} />}
+        {product && <ProductDetail product={product} serversideProps={serversideProps} />}
       </div>
     </PageWrapper>
   );
+};
+
+ProductDetailPage.loader = async (router: MemoryRouterInstance<typeof ProductDetailPage>) => {
+  const [currentProduct, relatedProducts] = await Promise.all([
+    getProduct(router.params?.id),
+    getRelatedProducts(router.params?.category2 ?? "", router.params?.id),
+  ]);
+  return { data: { currentProduct, relatedProducts }, title: `${currentProduct?.title} - 쇼핑몰` };
 };

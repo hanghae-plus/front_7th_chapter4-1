@@ -7,8 +7,14 @@ import RelatedProducts from "./RelatedProducts";
 import { useCartAddCommand } from "../../carts";
 import { log } from "../../../utils";
 
-export function ProductDetail(product: Readonly<Product>) {
-  log(`ProductDetail: ${product.productId}`);
+export function ProductDetail({
+  product,
+  serversideProps,
+}: {
+  product: Readonly<Product>;
+  serversideProps: { relatedProducts: Product[] };
+}) {
+  log(`ProductDetail: ${product?.productId}`);
   const addToCart = useCartAddCommand();
   const { productId, title, image, lprice, brand, category1, category2 } = product;
   const [cartQuantity, setCartQuantity] = useState(1);
@@ -202,7 +208,7 @@ export function ProductDetail(product: Readonly<Product>) {
       </div>
 
       {/* 관련 상품 */}
-      <RelatedProducts />
+      <RelatedProducts serversideProps={serversideProps} />
     </div>
   );
 }

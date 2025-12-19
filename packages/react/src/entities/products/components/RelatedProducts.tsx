@@ -1,9 +1,11 @@
 import { router } from "../../../router";
 import { useProductStore } from "../hooks";
+import type { Product } from "../types";
 
-export default function RelatedProducts() {
-  const { relatedProducts } = useProductStore();
-  if (relatedProducts.length === 0) {
+export default function RelatedProducts({ serversideProps }: { serversideProps: { relatedProducts: Product[] } }) {
+  const storeState = useProductStore();
+  const { relatedProducts = [] } = serversideProps ?? storeState;
+  if (relatedProducts?.length === 0) {
     return null;
   }
   return (

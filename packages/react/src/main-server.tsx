@@ -33,7 +33,7 @@ export const render = async (url: string) => {
   const { data, title } = pageData ?? { data: {}, title: "" };
   return {
     head: `<title>${title || ""}</title>`,
-    html: renderToString(createElement(() => PageComponent?.({ serversideProps: data }))),
+    html: renderToString(createElement(() => PageComponent?.({ serversideProps: data, serverRouter: router }))),
     initialDataScript: data ? `<script>window.__INITIAL_DATA__ = ${JSON.stringify(data)}</script>` : "",
   };
 };

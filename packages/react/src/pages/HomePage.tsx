@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, type FunctionComponent } from "react";
 import {
   loadNextProducts,
   loadProductsAndCategories,
@@ -38,6 +38,7 @@ const unregisterScrollHandler = () => {
 
 export const HomePage = ({
   serversideProps,
+  serverRouter,
 }: {
   serversideProps: {
     products: Product[];
@@ -46,6 +47,7 @@ export const HomePage = ({
     error: string | null;
     categories: Categories;
   };
+  serverRouter: MemoryRouterInstance<FunctionComponent>;
 }) => {
   useEffect(() => {
     registerScrollHandler();
@@ -60,7 +62,7 @@ export const HomePage = ({
   return (
     <PageWrapper headerLeft={headerLeft}>
       {/* 검색 및 필터 */}
-      <SearchBar serversideProps={serversideProps} />
+      <SearchBar serversideProps={serversideProps} serverRouter={serverRouter} />
 
       {/* 상품 목록 */}
       <div className="mb-6">

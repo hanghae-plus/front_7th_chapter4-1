@@ -1,9 +1,10 @@
-import { type ChangeEvent, Fragment, type KeyboardEvent, type MouseEvent } from "react";
+import { type ChangeEvent, Fragment, type FunctionComponent, type KeyboardEvent, type MouseEvent } from "react";
 import { PublicImage } from "../../../components";
 import { useProductStore } from "../hooks";
 import { useProductFilter } from "./hooks";
 import { searchProducts, setCategory, setLimit, setSort } from "../productUseCase";
 import type { Categories } from "../types";
+import type { MemoryRouterInstance } from "@hanghae-plus/lib";
 
 const OPTION_LIMITS = [10, 20, 50, 100];
 const OPTION_SORTS = [
@@ -90,14 +91,37 @@ const handleSubCategoryClick = async (e: MouseEvent<HTMLButtonElement>) => {
 
 export function SearchBar({
   serversideProps,
+  serverRouter,
 }: {
   serversideProps?: {
     categories: Categories;
   };
+  serverRouter: MemoryRouterInstance<FunctionComponent>;
 }) {
   const storeState = useProductStore();
+
+  const serverQuery = serverRouter?.query as {
+    search: string;
+    limit: string;
+    sort: string;
+    category1: string;
+    category2: string;
+  };
+
   const { categories = {} } = serversideProps ?? storeState;
-  const { searchQuery, limit = "20", sort, category } = useProductFilter();
+  const filterState = useProductFilter();
+  const {
+    searchQuery,
+    limit = "20",
+    sort,
+    category,
+  } = serverQuery
+    ? {
+        ...serverQuery,
+        searchQuery: serverQuery.search,
+        category: { category1: serverQuery.category1, category2: serverQuery.category2 },
+      }
+    : filterState;
 
   const categoryList = Object.keys(categories).length > 0 ? Object.keys(categories) : [];
   const limitOptions = OPTION_LIMITS.map((value) => (
@@ -149,7 +173,7 @@ export function SearchBar({
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <label className="text-sm text-gray-600">카테고리:</label>
-            {["전체", category.category1, category.category2]
+            {["전체", category?.category1, category?.category2]
               .filter((cat, index) => index === 0 || Boolean(cat))
               .map((cat, index) => {
                 if (index == 0) {
