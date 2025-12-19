@@ -12,6 +12,8 @@ type QueryPayload = Record<string, string | number | undefined>;
 
 export type RouterInstance<T extends AnyFunction> = InstanceType<typeof Router<T>>;
 
+const isServer = () => typeof window === "undefined";
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export class Router<Handler extends (...args: any[]) => any> {
   readonly #routes: Map<string, Route<Handler>>;
@@ -19,31 +21,37 @@ export class Router<Handler extends (...args: any[]) => any> {
   readonly #baseUrl;
 
   #route: null | (Route<Handler> & { params: StringRecord; path: string });
+  #query: StringRecord = {};
 
   constructor(baseUrl = "") {
     this.#routes = new Map();
     this.#route = null;
     this.#baseUrl = baseUrl.replace(/\/$/, "");
 
-    window.addEventListener("popstate", () => {
-      this.#route = this.#findRoute();
-      this.#observer.notify();
-    });
+    if (!isServer()) {
+      window.addEventListener("popstate", () => {
+        this.#route = this.#findRoute();
+        this.#observer.notify();
+      });
 
-    document.addEventListener("click", (e) => {
-      const target = e.target as HTMLElement;
-      if (!target?.closest("[data-link]")) {
-        return;
-      }
-      e.preventDefault();
-      const url = target.getAttribute("href") ?? target.closest("[data-link]")?.getAttribute("href");
-      if (url) {
-        this.push(url);
-      }
-    });
+      document.addEventListener("click", (e) => {
+        const target = e.target as HTMLElement;
+        if (!target?.closest("[data-link]")) {
+          return;
+        }
+        e.preventDefault();
+        const url = target.getAttribute("href") ?? target.closest("[data-link]")?.getAttribute("href");
+        if (url) {
+          this.push(url);
+        }
+      });
+    }
   }
 
   get query(): StringRecord {
+    if (isServer()) {
+      return this.#query;
+    }
     return Router.parseQuery(window.location.search);
   }
 
@@ -85,10 +93,15 @@ export class Router<Handler extends (...args: any[]) => any> {
     });
   }
 
-  #findRoute(url = window.location.pathname) {
-    const { pathname } = new URL(url, window.location.origin);
+  #findRoute(url?: string) {
+    const pathname = url || (isServer() ? "" : window.location.pathname);
+    if (!pathname) return null;
+
+    const origin = isServer() ? "http://localhost" : window.location.origin;
+    const { pathname: normalizedPath } = new URL(pathname, origin);
+
     for (const [routePath, route] of this.#routes) {
-      const match = pathname.match(route.regex);
+      const match = normalizedPath.match(route.regex);
       if (match) {
         // 매치된 파라미터들을 객체로 변환
         const params: StringRecord = {};
@@ -106,7 +119,36 @@ export class Router<Handler extends (...args: any[]) => any> {
     return null;
   }
 
+  match(url: string, query?: QueryPayload) {
+    const pathname = url.includes("?") ? url.split("?")[0] : url;
+    const route = this.#findRoute(pathname);
+
+    if (!route) return null;
+
+    this.#route = route;
+    const queryParams: StringRecord = {};
+    if (query) {
+      Object.entries(query).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          queryParams[key] = String(value);
+        }
+      });
+    }
+    this.#query = queryParams;
+
+    return {
+      path: route.path,
+      params: route.params ?? {},
+      handler: route.handler,
+      query: queryParams,
+    };
+  }
+
   push(url: string) {
+    if (isServer()) {
+      return;
+    }
+
     try {
       // baseUrl이 없으면 자동으로 붙여줌
       const fullUrl = url.startsWith(this.#baseUrl) ? url : this.#baseUrl + (url.startsWith("/") ? url : "/" + url);
@@ -130,8 +172,9 @@ export class Router<Handler extends (...args: any[]) => any> {
     this.#observer.notify();
   }
 
-  static parseQuery = (search = window.location.search) => {
-    const params = new URLSearchParams(search);
+  static parseQuery = (search?: string) => {
+    const searchString = search ?? (isServer() ? "" : window.location.search);
+    const params = new URLSearchParams(searchString);
     const query: StringRecord = {};
     for (const [key, value] of params) {
       query[key] = value;
@@ -150,6 +193,11 @@ export class Router<Handler extends (...args: any[]) => any> {
   };
 
   static getUrl = (newQuery: QueryPayload, baseUrl = "") => {
+    if (isServer()) {
+      const queryString = Router.stringifyQuery(newQuery);
+      return `${baseUrl}${queryString ? `?${queryString}` : ""}`;
+    }
+
     const currentQuery = Router.parseQuery();
     const updatedQuery = { ...currentQuery, ...newQuery };
 
