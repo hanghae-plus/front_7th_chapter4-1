@@ -4,7 +4,8 @@ import { BASE_URL } from "../constants";
 
 export const createRouter = () => {
   if (typeof window === "undefined") {
-    return new MemoryRouter(BASE_URL);
+    // SSR에서는 base 없이 순수 경로만 사용 (server.js에서 이미 base 제거됨)
+    return new MemoryRouter("");
   } else {
     return new Router(BASE_URL);
   }

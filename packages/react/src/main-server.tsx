@@ -11,6 +11,8 @@ server.listen({
 });
 
 export const render = async (url: string) => {
+  const normalizedUrl = url || "/";
+
   // render가 호출될 때마다 새로운 Router 인스턴스 생성
   const router = createRouter() as MemoryRouterInstance<FunctionComponent>;
 
@@ -19,10 +21,11 @@ export const render = async (url: string) => {
   router.addRoute(".*", NotFoundPage);
 
   // 현재 URL 설정 및 라우트 매칭
-  router.setUrl(url);
+  router.setUrl(normalizedUrl);
   router.start();
 
   const PageComponent = router.target;
+  console.log(PageComponent, "PageComponent", normalizedUrl);
 
   // 페이지 로더 실행 (데이터 프리패칭)
   let pageData = null;
