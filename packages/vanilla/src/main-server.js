@@ -26,8 +26,30 @@ export const render = async (url, query) => {
     });
   }
 
+  if (PageComponent === ProductDetailPage) {
+    // 상품 정보 설정
+    productStore.dispatch({
+      type: PRODUCT_ACTIONS.SET_CURRENT_PRODUCT,
+      payload: initData.product,
+    });
+
+    // 관련 상품 설정
+    if (initData.relatedProducts) {
+      productStore.dispatch({
+        type: PRODUCT_ACTIONS.SET_RELATED_PRODUCTS,
+        payload: initData.relatedProducts,
+      });
+    }
+  }
+
+  // 동적 title 생성
+  let pageTitle = PageComponent.title || "쇼핑몰";
+  if (PageComponent === ProductDetailPage && initData?.product) {
+    pageTitle = `${initData.product.title} | 쇼핑몰`;
+  }
+
   return {
-    head: `<title>${PageComponent.title || "쇼핑몰"}</title>`,
+    head: `<title>${pageTitle}</title>`,
     html: PageComponent(),
     data: initData,
   };

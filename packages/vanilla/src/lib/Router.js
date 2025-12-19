@@ -111,6 +111,10 @@ export class Router {
       }
 
       this.#route = this.#findRoute(fullUrl);
+
+      // 페이지 title 업데이트 (CSR)
+      this.#updateTitle();
+
       this.#observer.notify();
     } catch (error) {
       console.error("라우터 네비게이션 오류:", error);
@@ -122,7 +126,20 @@ export class Router {
    */
   start() {
     this.#route = this.#findRoute();
+    this.#updateTitle();
     this.#observer.notify();
+  }
+
+  /**
+   * 페이지 title 업데이트
+   */
+  #updateTitle() {
+    if (typeof window === "undefined") return;
+
+    const PageComponent = this.target;
+    if (PageComponent?.title) {
+      document.title = PageComponent.title;
+    }
   }
 
   /**

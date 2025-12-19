@@ -37,3 +37,7 @@ export const NotFoundPage = () =>
       </div>
     `.trim(),
   });
+
+NotFoundPage.title = "404 | 쇼핑몰";
+
+NotFoundPage.title = "404 | 쇼핑몰";

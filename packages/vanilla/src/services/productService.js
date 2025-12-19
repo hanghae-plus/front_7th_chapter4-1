@@ -122,6 +122,10 @@ export const loadProductDetailForPage = async (productId) => {
   try {
     const currentProduct = productStore.getState().currentProduct;
     if (productId === currentProduct?.productId) {
+      // title 업데이트 (CSR) - 이미 로드된 상품인 경우
+      if (typeof window !== "undefined" && currentProduct?.title) {
+        document.title = `${currentProduct.title} | 쇼핑몰`;
+      }
       // 관련 상품 로드 (같은 category2 기준)
       if (currentProduct.category2) {
         await loadRelatedProducts(currentProduct.category2, productId);
@@ -146,6 +150,11 @@ export const loadProductDetailForPage = async (productId) => {
       type: PRODUCT_ACTIONS.SET_CURRENT_PRODUCT,
       payload: product,
     });
+
+    // title 업데이트 (CSR)
+    if (typeof window !== "undefined" && product?.title) {
+      document.title = `${product.title} | 쇼핑몰`;
+    }
 
     // 관련 상품 로드 (같은 category2 기준)
     if (product.category2) {
