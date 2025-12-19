@@ -13,7 +13,7 @@ interface State {
 }
 
 const handleSelectAllChange = (e: ChangeEvent<HTMLInputElement>) => {
-  if (e.target.checked) {
+  if (e.currentTarget.checked) {
     selectAllCart();
   } else {
     deselectAllCart();

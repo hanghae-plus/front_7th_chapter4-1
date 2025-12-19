@@ -104,3 +104,8 @@ const productReducer = (state, action) => {
  * 상품 스토어 생성
  */
 export const productStore = createStore(productReducer, initialProductState);
+
+/**
+ * 요청 단위 상품 스토어 생성 팩토리
+ */
+export const createProductStore = () => createStore(productReducer, initialProductState);

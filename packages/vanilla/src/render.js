@@ -9,6 +9,29 @@ router.addRoute("/product/:id/", ProductDetailPage);
 router.addRoute(".*", NotFoundPage);
 
 /**
+ * 페이지 title 업데이트
+ * 라우트 변경 시 페이지 컴포넌트의 metadata 함수를 호출하여 title을 업데이트
+ */
+const updateTitle = async () => {
+  try {
+    const pageComponent = router.target;
+    if (pageComponent?.metadata) {
+      const params = {
+        pathname: window.location.pathname,
+        query: router.query || {},
+        params: router.params || {},
+      };
+      const metadata = await pageComponent.metadata(params);
+      if (metadata?.title) {
+        document.title = metadata.title;
+      }
+    }
+  } catch (error) {
+    console.error("Failed to update title:", error);
+  }
+};
+
+/**
  * 전체 애플리케이션 렌더링
  */
 export const render = withBatch(() => {
@@ -19,6 +42,11 @@ export const render = withBatch(() => {
 
   // App 컴포넌트 렌더링
   rootElement.innerHTML = PageComponent();
+
+  // 페이지 title 업데이트 (비동기이므로 즉시 실행)
+  updateTitle().catch((error) => {
+    console.error("Failed to update title:", error);
+  });
 });
 
 /**

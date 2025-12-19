@@ -1,4 +1,4 @@
-import type { StringRecord } from "../../types";
+import type { StringRecord } from "@hanghae-plus/lib";
 
 export type Categories = Record<string, Record<string, string | StringRecord>>;
 
@@ -17,4 +17,9 @@ export interface Product {
   category2: string;
   category3?: string;
   category4?: string;
+  description?: string;
+  rating?: number;
+  reviewCount?: number;
+  stock?: number;
+  images?: string[];
 }

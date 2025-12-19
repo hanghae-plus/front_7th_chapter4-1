@@ -1,3 +1,5 @@
+import { isServer } from "../constants.js";
+
 const lifeCycles = new WeakMap();
 const pageState = { current: null, previous: null };
 const initLifecycle = { mount: null, unmount: null, watches: [], deps: [], mounted: false };
@@ -48,7 +50,7 @@ const unmount = (pageFunction) => {
   lifecycle.mounted = false;
 };
 
-export const withLifecycle = ({ onMount, onUnmount, watches } = {}, page) => {
+export const withLifecycle = ({ onMount, onUnmount, watches, ssr, metadata } = {}, page) => {
   const lifecycle = getPageLifecycle(page);
   if (typeof onMount === "function") {
     lifecycle.mount = onMount;
@@ -62,7 +64,37 @@ export const withLifecycle = ({ onMount, onUnmount, watches } = {}, page) => {
     lifecycle.watches = typeof watches[0] === "function" ? [watches] : watches;
   }
 
-  return (...args) => {
+  if (ssr && isServer) {
+    const serverHandler = async (...args) => {
+      try {
+        const ssrData = await ssr(...args);
+        const metadataResult = metadata ? await metadata(...args, ssrData) : null;
+
+        const html = page(...args, { data: ssrData });
+
+        return {
+          html,
+          data: ssrData,
+          metadata: metadataResult,
+        };
+      } catch (error) {
+        console.error("SSR Error:", error);
+        return {
+          html: page(...args),
+          data: null,
+          metadata: null,
+          error,
+        };
+      }
+    };
+
+    serverHandler.ssr = ssr;
+    serverHandler.metadata = metadata;
+
+    return serverHandler;
+  }
+
+  const clientHandler = (...args) => {
     const wasNewPage = pageState.current !== page;
 
     // 이전 페이지 언마운트
@@ -93,4 +125,11 @@ export const withLifecycle = ({ onMount, onUnmount, watches } = {}, page) => {
     // 페이지 함수 실행
     return page(...args);
   };
+
+  // 클라이언트 사이드에서도 metadata를 접근할 수 있도록 설정
+  if (metadata) {
+    clientHandler.metadata = metadata;
+  }
+
+  return clientHandler;
 };

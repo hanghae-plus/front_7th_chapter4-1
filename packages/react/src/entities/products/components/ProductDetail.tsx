@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { router } from "../../../router";
+import { useRouterContext } from "../../../router/hooks/useRouterContext";
 import type { StringRecord } from "../../../types";
 import type { Product } from "../types";
 import { PublicImage } from "../../../components";
@@ -8,15 +8,23 @@ import { useCartAddCommand } from "../../carts";
 import { log } from "../../../utils";
 
 export function ProductDetail(product: Readonly<Product>) {
+  const router = useRouterContext();
   log(`ProductDetail: ${product.productId}`);
   const addToCart = useCartAddCommand();
-  const { productId, title, image, lprice, brand, category1, category2 } = product;
-  const [cartQuantity, setCartQuantity] = useState(1);
-
-  const description = "",
+  const {
+    productId,
+    title,
+    image,
+    lprice,
+    brand,
+    category1,
+    category2,
+    description = "",
     rating = 0,
     reviewCount = 0,
-    stock = 100;
+    stock = 100,
+  } = product;
+  const [cartQuantity, setCartQuantity] = useState(1);
 
   const price = Number(lprice);
 

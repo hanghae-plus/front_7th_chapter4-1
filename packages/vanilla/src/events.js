@@ -192,19 +192,33 @@ export function registerProductDetailEvents() {
     router.push(`/?${queryString}`);
   });
 
-  // 상품 상세 페이지에서 수량 증가/감소
+  /**
+   * 상품 상세 페이지에서 수량 증가/감소
+   */
   addEvent("click", "#quantity-increase", () => {
     const input = document.getElementById("quantity-input");
     if (input) {
+      // parseInt 실패 시 기본값 1 사용 (빈 문자열이나 잘못된 값 처리)
+      const currentValue = parseInt(input.value) || 1;
       const max = parseInt(input.getAttribute("max")) || 100;
-      input.value = Math.min(max, parseInt(input.value) + 1);
+      const newValue = Math.min(max, currentValue + 1);
+      // 문자열로 변환해서 할당 (input.value는 문자열이어야 함)
+      input.value = newValue.toString();
     }
   });
 
+  /**
+   * 수량 감소 버튼 클릭 이벤트
+   * 최소값은 1로 제한
+   */
   addEvent("click", "#quantity-decrease", () => {
     const input = document.getElementById("quantity-input");
     if (input) {
-      input.value = Math.max(1, parseInt(input.value) - 1);
+      // parseInt 실패 시 기본값 1 사용
+      const currentValue = parseInt(input.value) || 1;
+      const newValue = Math.max(1, currentValue - 1); // 최소값 1
+      // 문자열로 변환해서 할당
+      input.value = newValue.toString();
     }
   });
 

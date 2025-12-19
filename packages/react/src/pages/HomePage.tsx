@@ -1,6 +1,8 @@
-import { useEffect } from "react";
-import { loadNextProducts, loadProductsAndCategories, ProductList, SearchBar } from "../entities";
+import { useEffect, useCallback } from "react";
+import { ProductList, SearchBar, useProductStoreContext } from "../entities";
 import { PageWrapper } from "./PageWrapper";
+import { withServerSideProps } from "../utils";
+import { getProducts, getCategories } from "../api/productApi";
 
 const headerLeft = (
   <h1 className="text-xl font-bold text-gray-900">
@@ -10,39 +12,63 @@ const headerLeft = (
   </h1>
 );
 
-// 무한 스크롤 이벤트 등록
-let scrollHandlerRegistered = false;
+export const HomePage = withServerSideProps(
+  {
+    ssr: async ({ query }) => {
+      const [
+        {
+          products,
+          pagination: { total },
+        },
+        categories,
+      ] = await Promise.all([getProducts(query), getCategories()]);
 
-const registerScrollHandler = () => {
-  if (scrollHandlerRegistered) return;
+      return {
+        products,
+        categories,
+        totalCount: total,
+        loading: false,
+        status: "done",
+      };
+    },
+    metadata: async () => {
+      return {
+        title: "쇼핑몰 - 홈",
+      };
+    },
+  },
+  () => {
+    const {
+      action: { loadProductsAndCategories, loadNextProducts },
+    } = useProductStoreContext();
 
-  window.addEventListener("scroll", loadNextProducts);
-  scrollHandlerRegistered = true;
-};
+    // 무한 스크롤 이벤트 등록/해제 함수를 useCallback으로 메모이제이션
+    // loadNextProducts가 안정적인 참조를 보장하므로 의존성 배열에 포함
+    const registerScrollHandler = useCallback(() => {
+      window.addEventListener("scroll", loadNextProducts);
+    }, [loadNextProducts]);
 
-const unregisterScrollHandler = () => {
-  if (!scrollHandlerRegistered) return;
-  window.removeEventListener("scroll", loadNextProducts);
-  scrollHandlerRegistered = false;
-};
+    const unregisterScrollHandler = useCallback(() => {
+      window.removeEventListener("scroll", loadNextProducts);
+    }, [loadNextProducts]);
 
-export const HomePage = () => {
-  useEffect(() => {
-    registerScrollHandler();
-    loadProductsAndCategories();
+    useEffect(() => {
+      registerScrollHandler();
+      loadProductsAndCategories();
 
-    return unregisterScrollHandler;
-  }, []);
+      return unregisterScrollHandler;
+    }, [registerScrollHandler, loadProductsAndCategories, unregisterScrollHandler]);
 
-  return (
-    <PageWrapper headerLeft={headerLeft}>
-      {/* 검색 및 필터 */}
-      <SearchBar />
+    return (
+      <PageWrapper headerLeft={headerLeft}>
+        {/* 검색 및 필터 */}
+        <SearchBar />
 
-      {/* 상품 목록 */}
-      <div className="mb-6">
-        <ProductList />
-      </div>
-    </PageWrapper>
-  );
-};
+        {/* 상품 목록 */}
+        <div className="mb-6">
+          <ProductList />
+        </div>
+      </PageWrapper>
+    );
+  },
+);
