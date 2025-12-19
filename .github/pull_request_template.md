@@ -4,7 +4,7 @@
 
 <!--
 배포 링크를 적어주세요
-예시: https://<username>.github.io/front-6th-chapter4-1/
+예시: https://<username>.github.io/front-7th-chapter4-1/
 
 배포가 완료되지 않으면 과제를 통과할 수 없습니다.
 배포 후에 정상 작동하는지 확인해주세요.
