@@ -1,6 +1,8 @@
-import { HomePage, ProductDetailPage, NotFoundPage } from "./pages";
-import { ServerRouter } from "./lib";
-import { server } from "./mocks/server";
+import { HomePage } from "./pages/HomePage.js";
+import { ProductDetailPage } from "./pages/ProductDetailPage.js";
+import { NotFoundPage } from "./pages/NotFoundPage.js";
+import { ServerRouter } from "./lib/index.js";
+import { server } from "./mocks/server.js";
 
 server.listen({
   onUnhandledRequest: "bypass",

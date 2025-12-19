@@ -1,5 +1,5 @@
 import { http, HttpResponse } from "msw";
-import items from "./items.json";
+import items from "./items.json" with { type: "json" };
 
 const delay = async () => await new Promise((resolve) => setTimeout(resolve, 200));
 

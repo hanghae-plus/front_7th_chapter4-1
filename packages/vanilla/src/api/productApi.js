@@ -1,4 +1,4 @@
-import getBaseUrl from "./getBaseUrl";
+import getBaseUrl from "./getBaseUrl.js";
 
 export async function getProducts(params = {}) {
   const { limit = 20, search = "", category1 = "", category2 = "", sort = "price_asc" } = params;
