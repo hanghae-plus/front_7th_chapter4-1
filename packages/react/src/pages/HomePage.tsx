@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { loadNextProducts, loadProductsAndCategories, ProductList, SearchBar } from "../entities";
+import { loadNextProducts, loadProductsAndCategories, ProductList, SearchBar, productStore } from "../entities";
 import { PageWrapper } from "./PageWrapper";
 
 const headerLeft = (
@@ -29,7 +29,12 @@ const unregisterScrollHandler = () => {
 export const HomePage = () => {
   useEffect(() => {
     registerScrollHandler();
-    loadProductsAndCategories();
+    const state = productStore.getState();
+
+    // 스토어가 비어있을 때만 초기 로드 (SSR 데이터가 없는 경우)
+    if (!state.products || state.products.length === 0) {
+      loadProductsAndCategories();
+    }
 
     return unregisterScrollHandler;
   }, []);

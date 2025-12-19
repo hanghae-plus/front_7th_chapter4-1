@@ -1,34 +1,140 @@
 import express from "express";
+import { fileURLToPath } from "url";
+import { dirname, resolve } from "path";
+import fs from "fs/promises";
+import { server as mswServer } from "./src/mocks/node.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const prod = process.env.NODE_ENV === "production";
 const port = process.env.PORT || 5173;
 const base = process.env.BASE || (prod ? "/front_7th_chapter4-1/vanilla/" : "/");
 
-const app = express();
-
-const render = () => {
-  return `<div>안녕하세요</div>`;
-};
-
-app.get("*all", (req, res) => {
-  res.send(
-    `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vanilla Javascript SSR</title>
-</head>
-<body>
-<div id="app">${render()}</div>
-</body>
-</html>
-  `.trim(),
-  );
+// MSW 서버 시작 (Node.js fetch 요청 인터셉트)
+mswServer.listen({
+  onUnhandledRequest: "bypass",
 });
 
-// Start http server
-app.listen(port, () => {
-  console.log(`React Server started at http://localhost:${port}`);
-});
+/**
+ * initialData 스크립트 태그 생성
+ * @param {Object} initialData
+ * @returns {string}
+ */
+function createInitialDataScript(initialData) {
+  return `<script>window.__INITIAL_DATA__ = ${JSON.stringify(initialData)};</script>`;
+}
+
+/**
+ * HTML 템플릿에 SSR 결과 삽입
+ * @param {string} template
+ * @param {{ html: string, head: string, initialData: Object }} renderResult
+ * @returns {string}
+ */
+function applyTemplate(template, { html, head, initialData }) {
+  const initialDataScript = createInitialDataScript(initialData);
+
+  return template
+    .replace("<!--app-head-->", head)
+    .replace("<!--app-html-->", html)
+    .replace("</head>", `${initialDataScript}</head>`);
+}
+
+async function createServer() {
+  const app = express();
+
+  // HTML 템플릿과 render 함수 변수
+  let template;
+  let render;
+
+  if (!prod) {
+    // ============================================
+    // 개발 환경: Vite dev server 사용
+    // ============================================
+    const { createServer: createViteServer } = await import("vite");
+
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "custom",
+      base,
+    });
+
+    // Vite 미들웨어 사용
+    app.use(vite.middlewares);
+
+    app.use(async (req, res, next) => {
+      const url = req.originalUrl.replace(base, "/");
+
+      try {
+        // 1. index.html 읽기
+        template = await fs.readFile(resolve(__dirname, "index.html"), "utf-8");
+
+        // 2. Vite HTML 변환 적용 (HMR 클라이언트 주입 등)
+        template = await vite.transformIndexHtml(url, template);
+
+        // 3. SSR 모듈 로드 (매 요청마다 최신 코드 반영)
+        const ssrModule = await vite.ssrLoadModule("/src/main-server.js");
+        render = ssrModule.render;
+
+        // 4. 렌더링 실행
+        const renderResult = await render(url);
+
+        // 5. 템플릿 적용
+        const finalHtml = applyTemplate(template, renderResult);
+
+        // 6. 응답
+        res.status(200).set({ "Content-Type": "text/html" }).end(finalHtml);
+      } catch (e) {
+        // Vite 에러 처리
+        vite.ssrFixStacktrace(e);
+        console.error(e);
+        next(e);
+      }
+    });
+  } else {
+    // ============================================
+    // 프로덕션 환경: 빌드된 파일 사용
+    // ============================================
+    const compression = (await import("compression")).default;
+    const sirv = (await import("sirv")).default;
+
+    // gzip 압축
+    app.use(compression());
+
+    // 정적 파일 서빙 (dist/vanilla)
+    app.use(base, sirv(resolve(__dirname, "dist/vanilla"), { extensions: [] }));
+
+    // HTML 템플릿 미리 로드
+    template = await fs.readFile(resolve(__dirname, "dist/vanilla/index.html"), "utf-8");
+
+    // SSR 모듈 로드
+    const ssrModule = await import(resolve(__dirname, "dist/vanilla-ssr/main-server.js"));
+    render = ssrModule.render;
+
+    app.use(async (req, res, next) => {
+      const url = req.originalUrl.replace(base, "/");
+
+      try {
+        // 1. 렌더링 실행
+        const renderResult = await render(url);
+
+        // 2. 템플릿 적용
+        const finalHtml = applyTemplate(template, renderResult);
+
+        // 3. 응답
+        res.status(200).set({ "Content-Type": "text/html" }).end(finalHtml);
+      } catch (e) {
+        console.error(e);
+        next(e);
+      }
+    });
+  }
+
+  // 서버 시작
+  app.listen(port, () => {
+    console.log(`Server started at http://localhost:${port}`);
+    console.log(`Environment: ${prod ? "production" : "development"}`);
+  });
+}
+
+createServer();
