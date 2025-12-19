@@ -1,22 +1,18 @@
 /**
  * 간단한 SPA 라우터
  */
-import { createObserver } from "../createObserver";
+import { createObserver } from "./createObserver.js";
 
-export class ClientRouter {
+export class Router {
   #routes;
   #route;
   #observer = createObserver();
   #baseUrl;
 
-  constructor(baseUrl, routerMatches) {
+  constructor(baseUrl = "") {
     this.#routes = new Map();
     this.#route = null;
     this.#baseUrl = baseUrl.replace(/\/$/, "");
-
-    Object.entries(routerMatches).forEach(([pathname, page]) => {
-      this.addRoute(pathname, page);
-    });
 
     window.addEventListener("popstate", () => {
       this.#route = this.#findRoute();
@@ -29,11 +25,11 @@ export class ClientRouter {
   }
 
   get query() {
-    return ClientRouter.parseQuery(window.location.search);
+    return Router.parseQuery(window.location.search);
   }
 
   set query(newQuery) {
-    const newUrl = ClientRouter.getUrl(newQuery, this.#baseUrl);
+    const newUrl = Router.getUrl(newQuery, this.#baseUrl);
     this.push(newUrl);
   }
 
@@ -116,7 +112,6 @@ export class ClientRouter {
 
       this.#route = this.#findRoute(fullUrl);
       this.#observer.notify();
-      window.scrollTo(0, 0);
     } catch (error) {
       console.error("라우터 네비게이션 오류:", error);
     }
@@ -160,7 +155,7 @@ export class ClientRouter {
   };
 
   static getUrl = (newQuery, baseUrl = "") => {
-    const currentQuery = ClientRouter.parseQuery();
+    const currentQuery = Router.parseQuery();
     const updatedQuery = { ...currentQuery, ...newQuery };
 
     // 빈 값들 제거
@@ -170,7 +165,7 @@ export class ClientRouter {
       }
     });
 
-    const queryString = ClientRouter.stringifyQuery(updatedQuery);
+    const queryString = Router.stringifyQuery(updatedQuery);
     return `${baseUrl}${window.location.pathname.replace(baseUrl, "")}${queryString ? `?${queryString}` : ""}`;
   };
 }

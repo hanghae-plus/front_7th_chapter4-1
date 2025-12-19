@@ -1,6 +1,6 @@
-import { ModalProvider, ToastProvider } from "./components";
-import { useLoadCartStore } from "./entities";
 import { useCurrentPage } from "./router";
+import { useLoadCartStore } from "./entities";
+import { ModalProvider, ToastProvider } from "./components";
 
 const CartInitializer = () => {
   useLoadCartStore();

@@ -123,6 +123,7 @@ const productReducer = (state: typeof initialProductState, action: any) => {
   }
 };
 
-export const createProductStore = (initState: typeof initialProductState) => {
-  return createStore(productReducer, { ...initialProductState, ...initState });
-};
+/**
+ * 상품 스토어 생성
+ */
+export const productStore = createStore(productReducer, initialProductState);

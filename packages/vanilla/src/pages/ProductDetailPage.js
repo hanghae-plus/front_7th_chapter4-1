@@ -1,9 +1,8 @@
-import { getProduct, getProducts } from "../api/productApi.js";
-import { withIsomorphicLifecycle } from "../router/withLifecycle.js";
+import { productStore } from "../stores";
 import { loadProductDetailForPage } from "../services";
-import { initialProductState, PRODUCT_ACTIONS, productStore } from "../stores";
-import { isServer } from "../utils/runtime.js";
+import { router, withLifecycle } from "../router";
 import { PageWrapper } from "./PageWrapper.js";
+import { getProduct } from "../api/productApi.js";
 
 const loadingContent = `
   <div class="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -233,66 +232,18 @@ function ProductDetail({ product, relatedProducts = [] }) {
   `;
 }
 
-const ssrFetcher = async ({ params }) => {
-  try {
-    const product = await getProduct(params.id);
-    let relatedProducts = [];
-
-    if (product.category2) {
-      const response = await getProducts({
-        category2: product.category,
-        limit: 20,
-        page: 1,
-      });
-      relatedProducts = response.products.filter((product) => product.productId !== params.id);
-    }
-
-    return {
-      currentProduct: product,
-      relatedProducts,
-      error: null,
-      loading: false,
-    };
-  } catch (error) {
-    return {
-      ...initialProductState,
-      error: error.message,
-      loading: false,
-    };
-  }
-};
-
 /**
  * 상품 상세 페이지 컴포넌트
  */
-export const ProductDetailPage = withIsomorphicLifecycle(
+export const ProductDetailPage = withLifecycle(
   {
-    ssr: ssrFetcher,
-    metadata: async ({ params }) => {
-      const product = await getProduct(params.id);
-
-      return {
-        title: `${product.title} - 쇼핑몰`,
-      };
+    onMount: () => {
+      loadProductDetailForPage(router.params.id);
     },
-    initStore: ({ data }) => {
-      productStore.dispatch({
-        type: PRODUCT_ACTIONS.SETUP,
-        payload: { ...productStore.getState(), ...data },
-      });
-    },
-    onMount: ({ params, data }) => {
-      loadProductDetailForPage(params.id, data);
-    },
-    watches: [
-      ({ params }) => [params.id],
-      ({ params } = {}) => {
-        return loadProductDetailForPage(params.id);
-      },
-    ],
+    watches: [() => [router.params.id], () => loadProductDetailForPage(router.params.id)],
   },
-  ({ data }) => {
-    const { currentProduct: product, relatedProducts = [], error, loading } = isServer ? data : productStore.getState();
+  () => {
+    const { currentProduct: product, relatedProducts = [], error, loading } = productStore.getState();
 
     return PageWrapper({
       headerLeft: `
@@ -314,3 +265,9 @@ export const ProductDetailPage = withIsomorphicLifecycle(
     });
   },
 );
+
+ProductDetailPage.getTitle = async ({ id }) => {
+  const product = await getProduct(id);
+
+  return `${product.title} - 쇼핑몰`;
+};

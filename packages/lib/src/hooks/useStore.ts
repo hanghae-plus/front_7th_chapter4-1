@@ -1,5 +1,5 @@
-import { useSyncExternalStore } from "react";
 import type { createStore } from "../createStore";
+import { useSyncExternalStore } from "react";
 import { useShallowSelector } from "./useShallowSelector";
 
 type Store<T> = ReturnType<typeof createStore<T>>;

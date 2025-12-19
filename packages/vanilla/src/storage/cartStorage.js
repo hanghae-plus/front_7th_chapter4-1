@@ -1,4 +1,3 @@
-import { createMemoryStorage, createStorage } from "../lib";
-import { isServer } from "../utils";
+import { createStorage } from "../lib";
 
-export const cartStorage = createStorage("shopping_cart", isServer ? createMemoryStorage() : window.localStorage);
+export const cartStorage = createStorage("shopping_cart");

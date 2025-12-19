@@ -1,54 +1,47 @@
-import fs from "node:fs";
-import path from "node:path";
-import { createServer } from "vite";
+import fs from "fs";
 import { mswServer } from "./src/mocks/node.js";
 
 mswServer.listen({
-  onUnhandledRequest: "bypass",
+  onUnhandledRequest: "warn",
 });
 
-const vite = await createServer({
-  server: { middlewareMode: true },
-  appType: "custom",
-});
+const DIST_DIR = "../../dist/vanilla";
+const SSR_DIR = "./dist/vanilla-ssr";
 
-const { render } = await vite.ssrLoadModule("./src/main-server.js");
+async function generateStaticSite() {
+  const template = await fs.promises.readFile(`./dist/vanilla/index.html`, "utf-8");
+  const { render } = await import(`${SSR_DIR}/main-server.js`);
 
-const joinDist = (...pathnames) => path.join("../../dist/vanilla", ...pathnames);
+  const pages = await getPages();
 
-const template = fs.readFileSync(joinDist("/index.html"), "utf-8");
+  for (const page of pages) {
+    const { html, head, initialData } = await render(page.url);
+    const initialDataScript = `<script>window.__INITIAL_DATA__ = ${JSON.stringify(initialData)};</script>`;
+    const result = template
+      .replace("<!--app-html-->", html)
+      .replace("<!--app-head-->", head)
+      .replace("</head>", `${initialDataScript}</head>`);
 
-async function generateStaticSite(pathname, ssg) {
-  const fullPathname = pathname.endsWith(".html") ? joinDist(pathname) : joinDist(pathname, "/index.html");
-  const parsedPath = path.parse(fullPathname);
-
-  const rendered = await render(pathname, {}, ssg);
-
-  const html = template
-    .replace(`<!--app-head-->`, rendered.head ?? "")
-    .replace(`<!--app-html-->`, rendered.html ?? "")
-    .replace(
-      `<!-- app-data -->`,
-      `<script>window.__INITIAL_DATA__ = ${JSON.stringify(rendered.__INITIAL_DATA__)};</script>`,
-    );
-
-  if (!fs.existsSync(parsedPath.dir)) {
-    fs.mkdirSync(parsedPath.dir, { recursive: true });
+    const dir = page.filePath.split("/").slice(0, -1).join("/");
+    await fs.promises.mkdir(dir, { recursive: true });
+    await fs.writeFileSync(page.filePath, result);
   }
-
-  fs.writeFileSync(fullPathname, html);
 }
 
-// 404 생성
-await generateStaticSite("/404.html");
+async function getPages() {
+  const { getProducts } = await import(`${SSR_DIR}/main-server.js`);
+  const { products } = await getProducts({ limit: 20 });
 
-// 홈 생성
-await generateStaticSite("/");
+  return [
+    { url: "/", filePath: `${DIST_DIR}/index.html` },
+    { url: "/404", filePath: `${DIST_DIR}/404.html` },
+    ...products.map(({ productId }) => ({
+      url: `/product/${productId}/`,
+      filePath: `${DIST_DIR}/product/${productId}/index.html`,
+    })),
+  ];
+}
 
-// 상세페이지 생성
-const { getProducts } = await vite.ssrLoadModule("./src/api/productApi.js");
-const { products } = await getProducts();
-await Promise.all(products.map(async ({ productId }) => await generateStaticSite(`/product/${productId}/`)));
+await generateStaticSite();
 
 mswServer.close();
-vite.close();

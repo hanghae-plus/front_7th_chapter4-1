@@ -1,6 +1,6 @@
 import { createStore } from "../lib";
-import { cartStorage } from "../storage/index.js";
 import { CART_ACTIONS } from "./actionTypes";
+import { cartStorage } from "../storage/index.js";
 
 /**
  * 장바구니 스토어 초기 상태

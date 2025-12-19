@@ -1,31 +1,29 @@
-import { PublicImage } from "../../../components";
-import { useRouterQuery } from "../../../router";
-import { useRouterContext } from "../../../router/hooks/useRouterContext";
-import { useProductStore, useProductStoreContext } from "../hooks";
-import { loadProducts } from "../productUseCase";
 import { ProductCard, ProductCardSkeleton } from "./ProductCard";
+import { PublicImage } from "../../../components";
+import { useProductStore } from "../hooks";
+import { useProductUseCase } from "../productUseCase";
+import { useRouterContext } from "../../../router/hooks/useRouterContext";
 
 /**
  * 상품 목록 컴포넌트
  */
 export function ProductList() {
-  const productStore = useProductStoreContext();
-  const router = useRouterContext();
-  const query = useRouterQuery();
   const { products, loading, error, totalCount } = useProductStore();
   const hasMore = products.length < totalCount;
-
-  const retry = async () => {
-    try {
-      await loadProducts(productStore, query, true);
-    } catch (error) {
-      console.error("재시도 실패:", error);
-    }
-  };
+  const router = useRouterContext();
+  const { loadProducts } = useProductUseCase();
 
   const goToDetailPage = async (productId: string) => {
     // 상품 상세 페이지로 이동
     router.push(`/product/${productId}/`);
+  };
+
+  const retry = async () => {
+    try {
+      await loadProducts(true);
+    } catch (error) {
+      console.error("재시도 실패:", error);
+    }
   };
 
   // 에러 상태

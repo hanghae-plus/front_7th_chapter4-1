@@ -1,10 +1,8 @@
-import type { RouterInstance } from "@hanghae-plus/lib";
-import { type ChangeEvent, type FC, Fragment, type KeyboardEvent, type MouseEvent } from "react";
+import { type ChangeEvent, Fragment, type KeyboardEvent, type MouseEvent } from "react";
 import { PublicImage } from "../../../components";
-import { useRouterContext } from "../../../router/hooks/useRouterContext";
 import { useProductStore } from "../hooks";
-import { searchProducts, setCategory, setLimit, setSort } from "../productUseCase";
 import { useProductFilter } from "./hooks";
+import { useProductUseCase } from "../productUseCase";
 
 const OPTION_LIMITS = [10, 20, 50, 100];
 const OPTION_SORTS = [
@@ -14,85 +12,85 @@ const OPTION_SORTS = [
   { value: "name_desc", label: "이름 역순" },
 ];
 
-// 검색 입력 (Enter 키)
-const handleSearchKeyDown = async (e: KeyboardEvent<HTMLInputElement>, router: RouterInstance<FC>) => {
-  if (e.key === "Enter") {
-    const query = e.currentTarget.value.trim();
-    try {
-      searchProducts(router, query);
-    } catch (error) {
-      console.error("검색 실패:", error);
-    }
-  }
-};
-
-// 페이지당 상품 수 변경
-const handleLimitChange = async (e: ChangeEvent<HTMLSelectElement>, router: RouterInstance<FC>) => {
-  const limit = parseInt(e.target.value);
-  try {
-    setLimit(router, limit);
-  } catch (error) {
-    console.error("상품 수 변경 실패:", error);
-  }
-};
-
-// 정렬 변경
-const handleSortChange = async (e: ChangeEvent<HTMLSelectElement>, router: RouterInstance<FC>) => {
-  const sort = e.target.value;
-
-  try {
-    setSort(router, sort);
-  } catch (error) {
-    console.error("정렬 변경 실패:", error);
-  }
-};
-
-// 브레드크럼 카테고리 네비게이션
-const handleBreadCrumbClick = async (e: MouseEvent<HTMLButtonElement>, router: RouterInstance<FC>) => {
-  const breadcrumbType = e.currentTarget.getAttribute("data-breadcrumb");
-
-  try {
-    if (breadcrumbType === "reset") {
-      // "전체" 클릭 -> 카테고리 초기화
-      setCategory(router, { category1: "", category2: "" });
-    } else if (breadcrumbType === "category1") {
-      // 1depth 클릭 -> 2depth 제거하고 1depth만 유지
-      const category1 = e.currentTarget.getAttribute("data-category1");
-      setCategory(router, { ...(category1 && { category1 }), category2: "" });
-    }
-  } catch (error) {
-    console.error("브레드크럼 네비게이션 실패:", error);
-  }
-};
-
-// 1depth 카테고리 선택
-const handleMainCategoryClick = async (e: MouseEvent<HTMLButtonElement>, router: RouterInstance<FC>) => {
-  const category1 = e.currentTarget.getAttribute("data-category1");
-  if (!category1) return;
-
-  try {
-    setCategory(router, { category1, category2: "" });
-  } catch (error) {
-    console.error("1depth 카테고리 선택 실패:", error);
-  }
-};
-
-const handleSubCategoryClick = async (e: MouseEvent<HTMLButtonElement>, router: RouterInstance<FC>) => {
-  const category1 = e.currentTarget.getAttribute("data-category1");
-  const category2 = e.currentTarget.getAttribute("data-category2");
-  if (!category1 || !category2) return;
-
-  try {
-    setCategory(router, { category1, category2 });
-  } catch (error) {
-    console.error("2depth 카테고리 선택 실패:", error);
-  }
-};
-
 export function SearchBar() {
   const { categories } = useProductStore();
   const { searchQuery, limit = "20", sort, category } = useProductFilter();
-  const router = useRouterContext();
+  const { searchProducts, setCategory, setLimit, setSort } = useProductUseCase();
+
+  // 검색 입력 (Enter 키)
+  const handleSearchKeyDown = async (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      const query = e.currentTarget.value.trim();
+      try {
+        searchProducts(query);
+      } catch (error) {
+        console.error("검색 실패:", error);
+      }
+    }
+  };
+
+  // 페이지당 상품 수 변경
+  const handleLimitChange = async (e: ChangeEvent<HTMLSelectElement>) => {
+    const limit = parseInt(e.target.value);
+    try {
+      setLimit(limit);
+    } catch (error) {
+      console.error("상품 수 변경 실패:", error);
+    }
+  };
+
+  // 정렬 변경
+  const handleSortChange = async (e: ChangeEvent<HTMLSelectElement>) => {
+    const sort = e.target.value;
+
+    try {
+      setSort(sort);
+    } catch (error) {
+      console.error("정렬 변경 실패:", error);
+    }
+  };
+
+  // 브레드크럼 카테고리 네비게이션
+  const handleBreadCrumbClick = async (e: MouseEvent<HTMLButtonElement>) => {
+    const breadcrumbType = e.currentTarget.getAttribute("data-breadcrumb");
+
+    try {
+      if (breadcrumbType === "reset") {
+        // "전체" 클릭 -> 카테고리 초기화
+        setCategory({ category1: "", category2: "" });
+      } else if (breadcrumbType === "category1") {
+        // 1depth 클릭 -> 2depth 제거하고 1depth만 유지
+        const category1 = e.currentTarget.getAttribute("data-category1");
+        setCategory({ ...(category1 && { category1 }), category2: "" });
+      }
+    } catch (error) {
+      console.error("브레드크럼 네비게이션 실패:", error);
+    }
+  };
+
+  // 1depth 카테고리 선택
+  const handleMainCategoryClick = async (e: MouseEvent<HTMLButtonElement>) => {
+    const category1 = e.currentTarget.getAttribute("data-category1");
+    if (!category1) return;
+
+    try {
+      setCategory({ category1, category2: "" });
+    } catch (error) {
+      console.error("1depth 카테고리 선택 실패:", error);
+    }
+  };
+
+  const handleSubCategoryClick = async (e: MouseEvent<HTMLButtonElement>) => {
+    const category1 = e.currentTarget.getAttribute("data-category1");
+    const category2 = e.currentTarget.getAttribute("data-category2");
+    if (!category1 || !category2) return;
+
+    try {
+      setCategory({ category1, category2 });
+    } catch (error) {
+      console.error("2depth 카테고리 선택 실패:", error);
+    }
+  };
 
   const categoryList = Object.keys(categories).length > 0 ? Object.keys(categories) : [];
   const limitOptions = OPTION_LIMITS.map((value) => (
@@ -112,7 +110,7 @@ export function SearchBar() {
       data-category1={categoryKey}
       className="category1-filter-btn text-left px-3 py-2 text-sm rounded-md border transition-colors
                  bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
-      onClick={(e) => handleMainCategoryClick(e, router)}
+      onClick={handleMainCategoryClick}
     >
       {categoryKey}
     </button>
@@ -130,7 +128,7 @@ export function SearchBar() {
             defaultValue={searchQuery}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg
                         focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            onKeyDown={(e) => handleSearchKeyDown(e, router)}
+            onKeyDown={handleSearchKeyDown}
           />
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <PublicImage src="/search-icon.svg" alt="검색" className="h-5 w-5 text-gray-400" />
@@ -153,7 +151,7 @@ export function SearchBar() {
                       key="reset"
                       data-breadcrumb="reset"
                       className="text-xs hover:text-blue-800 hover:underline"
-                      onClick={(e) => handleBreadCrumbClick(e, router)}
+                      onClick={handleBreadCrumbClick}
                     >
                       전체
                     </button>
@@ -168,7 +166,7 @@ export function SearchBar() {
                         data-breadcrumb="category1"
                         data-category1={cat}
                         className="text-xs hover:text-blue-800 hover:underline"
-                        onClick={(e) => handleBreadCrumbClick(e, router)}
+                        onClick={handleBreadCrumbClick}
                       >
                         {cat}
                       </button>
@@ -213,7 +211,7 @@ export function SearchBar() {
                                    ? "bg-blue-100 border-blue-300 text-blue-800"
                                    : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
                                }`}
-                      onClick={(e) => handleSubCategoryClick(e, router)}
+                      onClick={handleSubCategoryClick}
                     >
                       {category2}
                     </button>
@@ -234,9 +232,8 @@ export function SearchBar() {
             <select
               id="limit-select"
               className="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-              onChange={(e) => handleLimitChange(e, router)}
+              onChange={handleLimitChange}
               defaultValue={Number(limit)}
-              value={Number(limit)}
             >
               {limitOptions}
             </select>
@@ -251,9 +248,8 @@ export function SearchBar() {
               id="sort-select"
               className="text-sm border border-gray-300 rounded px-2 py-1
                            focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-              onChange={(e) => handleSortChange(e, router)}
+              onChange={handleSortChange}
               defaultValue={sort}
-              value={sort}
             >
               {sortOptions}
             </select>

@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { PublicImage } from "../../../components";
-import { useRouterContext } from "../../../router/hooks/useRouterContext";
 import type { StringRecord } from "../../../types";
-import { log } from "../../../utils";
-import { useCartAddCommand } from "../../carts";
 import type { Product } from "../types";
+import { PublicImage } from "../../../components";
 import RelatedProducts from "./RelatedProducts";
+import { useCartAddCommand } from "../../carts";
+import { log } from "../../../utils";
+import { useRouterContext } from "../../../router/hooks/useRouterContext";
 
 export function ProductDetail(product: Readonly<Product>) {
   log(`ProductDetail: ${product.productId}`);

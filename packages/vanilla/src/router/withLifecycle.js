@@ -1,5 +1,4 @@
-import { isClient } from "../utils";
-import { withServer } from "./withServer";
+import { isServer } from "../utils/ssrUtils";
 
 const lifeCycles = new WeakMap();
 const pageState = { current: null, previous: null };
@@ -30,79 +29,75 @@ const depsChanged = (newDeps, oldDeps) => {
 };
 
 // 페이지 마운트 처리
-const mount = (page, ...args) => {
+const mount = (page) => {
   const lifecycle = getPageLifecycle(page);
+
+  if (isServer()) return;
+
   if (lifecycle.mounted) return;
 
   // 마운트 콜백들 실행
-  lifecycle.mount?.(...args);
+  lifecycle.mount?.();
   lifecycle.mounted = true;
   lifecycle.deps = [];
 };
 
 // 페이지 언마운트 처리
-const unmount = (pageFunction, ...args) => {
+const unmount = (pageFunction) => {
   const lifecycle = getPageLifecycle(pageFunction);
+
+  if (isServer()) return;
 
   if (!lifecycle.mounted) return;
 
   // 언마운트 콜백들 실행
-  lifecycle.unmount?.(...args);
+  lifecycle.unmount?.();
   lifecycle.mounted = false;
 };
 
-export const withIsomorphicLifecycle = ({ onMount, onUnmount, watches, initStore, ssr, metadata } = {}, page) => {
-  let init = false;
+export const withLifecycle = ({ onMount, onUnmount, watches } = {}, page) => {
+  const lifecycle = getPageLifecycle(page);
+  if (typeof onMount === "function") {
+    lifecycle.mount = onMount;
+  }
 
-  return withServer({ ssr, metadata }, (...args) => {
-    if (isClient && !init) {
-      init = true;
-      initStore(...args);
-    }
+  if (typeof onUnmount === "function") {
+    lifecycle.unmount = onUnmount;
+  }
 
-    const lifecycle = getPageLifecycle(page);
-    if (typeof onMount === "function") {
-      lifecycle.mount = onMount;
-    }
+  if (Array.isArray(watches)) {
+    lifecycle.watches = typeof watches[0] === "function" ? [watches] : watches;
+  }
 
-    if (typeof onUnmount === "function") {
-      lifecycle.unmount = onUnmount;
-    }
-
-    if (Array.isArray(watches)) {
-      lifecycle.watches = typeof watches[0] === "function" ? [watches] : watches;
-    }
-
+  return (...args) => {
     const wasNewPage = pageState.current !== page;
 
     // 이전 페이지 언마운트
     if (pageState.current && wasNewPage) {
-      unmount(pageState.current, ...args);
+      unmount(pageState.current);
     }
 
     // 현재 페이지 설정
     pageState.previous = pageState.current;
     pageState.current = page;
 
-    if (isClient) {
-      // 새 페이지면 마운트, 기존 페이지면 업데이트
-      if (wasNewPage) {
-        mount(page, ...args);
-      } else if (lifecycle.watches) {
-        lifecycle.watches.forEach(([getDeps, callback], index) => {
-          const newDeps = getDeps(...args);
+    // 새 페이지면 마운트, 기존 페이지면 업데이트
+    if (wasNewPage) {
+      mount(page);
+    } else if (lifecycle.watches) {
+      lifecycle.watches.forEach(([getDeps, callback], index) => {
+        const newDeps = getDeps();
 
-          if (depsChanged(newDeps, lifecycle.deps[index])) {
-            callback(...args);
-          }
+        if (depsChanged(newDeps, lifecycle.deps[index])) {
+          callback();
+        }
 
-          // deps 업데이트 (이 부분이 중요!)
-          lifecycle.deps[index] = Array.isArray(newDeps) ? [...newDeps] : [];
-        });
-      }
+        // deps 업데이트 (이 부분이 중요!)
+        lifecycle.deps[index] = Array.isArray(newDeps) ? [...newDeps] : [];
+      });
     }
 
     // 페이지 함수 실행
     return page(...args);
-  });
+  };
 };

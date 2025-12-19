@@ -1,84 +1,60 @@
 import express from "express";
-import fs from "node:fs/promises";
-import path from "node:path";
-import { createServer } from "vite";
+import compression from "compression";
+import sirv from "sirv";
+import { createServer as createViteServer } from "vite";
+import { readFileSync } from "fs";
+import { mswServer } from "./src/mocks/node.js";
 
 const prod = process.env.NODE_ENV === "production";
 const port = process.env.PORT || 5174;
-const base = process.env.BASE || (prod ? "/front_7th_chapter4-1/react/" : "/");
-
-const templateHtml = prod ? await fs.readFile("./dist/react/index.html", "utf-8") : "";
-
-const vite = await createServer({
-  server: { middlewareMode: true },
-  appType: "custom",
-  base,
-});
-
-const { mswServer } = await vite.ssrLoadModule("./src/mocks/node.ts");
-mswServer.listen({
-  onUnhandledRequest: "bypass",
-});
+const base = process.env.BASE || (prod ? "/front_6th_chapter4-1/react/" : "/");
 
 const app = express();
 
-// Add Vite or respective production middlewares
-/** @type {import('vite').ViteDevServer | undefined} */
+mswServer.listen({ onUnhandledRequest: "bypass" });
+
+let vite;
 if (!prod) {
+  vite = await createViteServer({
+    server: { middlewareMode: true },
+    appType: "custom",
+    base,
+  });
   app.use(vite.middlewares);
 } else {
-  const compression = (await import("compression")).default;
-  const sirv = (await import("sirv")).default;
   app.use(compression());
-  app.use(base, sirv("./dist/react", { extensions: [] }));
+  app.use(
+    base,
+    sirv("./dist/react", {
+      extensions: [],
+    }),
+  );
 }
 
-// 불필요한 요청 무시
-app.get("/favicon.ico", (_, res) => {
-  res.status(204).end();
-});
-app.get("/.well-known/appspecific/com.chrome.devtools.json", (_, res) => {
-  res.status(204).end();
-});
-
-app.get("*all", async (req, res) => {
-  try {
-    const url = req.originalUrl.replace(base, "");
-    const pathname = path.normalize(`/${url.split("?")[0]}`);
-
-    /** @type {string} */
-    let template;
-    /** @type {import('./src/main-server.js').render} */
-    let render;
-    if (!prod) {
-      // Always read fresh template in development
-      template = await fs.readFile("./index.html", "utf-8");
-      template = await vite.transformIndexHtml(url, template);
-      render = (await vite.ssrLoadModule("/src/main-server.js")).render;
-    } else {
-      template = templateHtml;
-      render = (await import("./dist/react-ssr/main-server.js")).render;
-    }
-
-    const rendered = await render(pathname, req.query);
-
-    const html = template
-      .replace(`<!--app-head-->`, rendered.head ?? "")
-      .replace(`<!--app-html-->`, rendered.html ?? "")
-      .replace(
-        `<!-- app-data -->`,
-        `<script>window.__INITIAL_DATA__ = ${JSON.stringify(rendered.__INITIAL_DATA__)};</script>`,
-      );
-
-    res.status(200).set({ "Content-Type": "text/html" }).send(html);
-  } catch (e) {
-    vite?.ssrFixStacktrace(e);
-    console.log(e.stack);
-    res.status(500).end(e.stack);
+async function importModule(path) {
+  if (!prod) {
+    return await vite.ssrLoadModule(`/src/${path}`);
+  } else {
+    return await import(`./dist/react-ssr/${path}`);
   }
+}
+
+app.use("*all", async (req, res) => {
+  // TODO: render 를 import 더 잘해보기
+  const { render } = await importModule("main-server.js");
+  const { html, head, initialData } = await render(req.originalUrl.replace(base, ""), req.query);
+
+  const template = prod ? readFileSync("./dist/react/index.html", "utf-8") : readFileSync("./index.html", "utf-8");
+  const initialDataScript = `<script>window.__INITIAL_DATA__ = ${JSON.stringify(initialData)};</script>`;
+
+  const finalHtml = template
+    .replace("<!--app-head-->", head)
+    .replace("<!--app-html-->", html)
+    .replace("</head>", `${initialDataScript}</head>`);
+
+  res.send(finalHtml);
 });
 
-// Start http server
 app.listen(port, () => {
   console.log(`React Server started at http://localhost:${port}`);
 });

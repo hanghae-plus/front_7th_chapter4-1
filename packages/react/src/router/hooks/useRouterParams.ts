@@ -7,5 +7,6 @@ const defaultSelector = <S>(params: Params) => params as S;
 
 export const useRouterParams = <S>(selector = defaultSelector<S>) => {
   const router = useRouterContext();
+
   return useRouter(router, ({ params }) => selector(params));
 };

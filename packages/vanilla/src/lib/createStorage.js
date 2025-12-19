@@ -1,10 +1,28 @@
+import { isServer } from "../utils/ssrUtils";
+
+const createMemoryStorage = () => {
+  const state = {};
+
+  return {
+    getItem: (key) => state[key],
+    setItem: (key, value) => {
+      state[key] = value;
+    },
+    removeItem: (key) => {
+      delete state[key];
+    },
+  };
+};
+
+const memoryStorage = createMemoryStorage();
+
 /**
  * 로컬스토리지 추상화 함수
  * @param {string} key - 스토리지 키
  * @param {Storage} storage - 기본값은 localStorage
  * @returns {Object} { get, set, reset }
  */
-export const createStorage = (key, storage = window.localStorage) => {
+export const createStorage = (key, storage = isServer() ? memoryStorage : window.localStorage) => {
   const get = () => {
     try {
       const item = storage.getItem(key);
@@ -32,14 +50,4 @@ export const createStorage = (key, storage = window.localStorage) => {
   };
 
   return { get, set, reset };
-};
-
-export const createMemoryStorage = () => {
-  const storage = new Map();
-
-  return {
-    getItem: (key) => storage.get(key),
-    setItem: (key, value) => storage.set(key, value),
-    removeItem: (key) => storage.delete(key),
-  };
 };
