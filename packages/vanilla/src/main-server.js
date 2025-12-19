@@ -1,4 +1,3 @@
-export const render = async (url, query) => {
-  console.log({ url, query });
-  return "";
+export const render = async (component) => {
+  return await component();
 };

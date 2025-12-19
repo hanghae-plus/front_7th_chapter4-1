@@ -1,8 +1,13 @@
-import { getCategories, getProduct, getProducts } from "../api/productApi";
-import { initialProductState, productStore, PRODUCT_ACTIONS } from "../stores";
-import { router } from "../router";
+import { getCategories, getProduct, getProducts } from "../api/productApi.js";
+import { initialProductState, productStore, PRODUCT_ACTIONS } from "../stores/index.js";
+import { router } from "../router/index.js";
 
 export const loadProductsAndCategories = async () => {
+  console.log("loadProductsAndCategories", productStore.getState().status);
+  if ("window" in globalThis && productStore.getState().status === "done") {
+    return productStore.getState();
+  }
+
   router.query = { current: undefined }; // 항상 첫 페이지로 초기화
   productStore.dispatch({
     type: PRODUCT_ACTIONS.SETUP,

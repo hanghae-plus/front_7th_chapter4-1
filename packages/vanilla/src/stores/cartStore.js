@@ -1,5 +1,5 @@
-import { createStore } from "../lib";
-import { CART_ACTIONS } from "./actionTypes";
+import { createStore } from "../lib/index.js";
+import { CART_ACTIONS } from "./actionTypes.js";
 import { cartStorage } from "../storage/index.js";
 
 /**
@@ -157,4 +157,4 @@ const cartReducer = (_, action) => {
 /**
  * 장바구니 스토어 생성
  */
-export const cartStore = createStore(cartReducer, initialState);
+export const cartStore = createStore("cart", cartReducer, initialState);
