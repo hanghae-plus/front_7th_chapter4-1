@@ -9,6 +9,24 @@ router.addRoute("/product/:id/", ProductDetailPage);
 router.addRoute(".*", NotFoundPage);
 
 /**
+ * 페이지별 title 업데이트
+ */
+const updatePageTitle = () => {
+  const PageComponent = router.target;
+
+  if (PageComponent === HomePage) {
+    document.title = "쇼핑몰 - 홈";
+  } else if (PageComponent === ProductDetailPage) {
+    const product = productStore.getState().currentProduct;
+    if (product) {
+      document.title = `${product.title} - 쇼핑몰`;
+    }
+  } else {
+    document.title = "쇼핑몰";
+  }
+};
+
+/**
  * 전체 애플리케이션 렌더링
  */
 export const render = withBatch(() => {
@@ -16,6 +34,9 @@ export const render = withBatch(() => {
   if (!rootElement) return;
 
   const PageComponent = router.target;
+
+  // title 업데이트
+  updatePageTitle();
 
   // App 컴포넌트 렌더링
   rootElement.innerHTML = PageComponent();
