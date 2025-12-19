@@ -1,11 +1,11 @@
 import { renderToString } from "react-dom/server";
 import { ServerRouter } from "./router/serverRouter";
-import { RouterProvider } from "./router/RouterContext";
 import { HomePage, NotFoundPage, ProductDetailPage } from "./pages";
 import { productStore, PRODUCT_ACTIONS, initialProductState } from "./entities/products/productStore";
 import { ModalProvider, ToastProvider } from "./components";
 import { loadHomePageData, loadProductDetailData, type InitialData } from "./ssr-data";
 import type { StringRecord } from "./types";
+import { QueryProvider } from "./contexts/QueryContext";
 
 const BASE_URL = process.env.NODE_ENV === "production" ? "/front_7th_chapter4-1/react" : "";
 
@@ -19,11 +19,11 @@ const ServerApp = ({ router, query }: { router: ServerRouter; query: StringRecor
   const PageComponent = router.target;
 
   return (
-    <RouterProvider query={query} params={router.params}>
+    <QueryProvider initialQuery={query}>
       <ToastProvider>
         <ModalProvider>{PageComponent ? <PageComponent /> : null}</ModalProvider>
       </ToastProvider>
-    </RouterProvider>
+    </QueryProvider>
   );
 };
 

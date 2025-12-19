@@ -93,11 +93,23 @@ export class Router<Handler extends (...args: any[]) => any> {
 
   #findRoute(url?: string) {
     if (isServer && !url) return null;
-    const pathname = url ?? window.location.pathname;
-    const parsedPathname = pathname.includes("://") ? new URL(pathname).pathname : pathname;
+
+    let pathname: string;
+    if (url) {
+      // URL에서 pathname만 추출 (쿼리 문자열 제거)
+      if (url.includes("://")) {
+        pathname = new URL(url).pathname;
+      } else if (url.includes("?")) {
+        pathname = url.split("?")[0];
+      } else {
+        pathname = url;
+      }
+    } else {
+      pathname = window.location.pathname;
+    }
 
     for (const [routePath, route] of this.#routes) {
-      const match = parsedPathname.match(route.regex);
+      const match = pathname.match(route.regex);
       if (match) {
         // 매치된 파라미터들을 객체로 변환
         const params: StringRecord = {};

@@ -25,9 +25,18 @@ if (prod) {
     appType: "custom",
   });
 
-  app.use(vite.middlewares);
+  // HTML이 아닌 파일들에 대해서만 Vite 미들웨어 사용
+  app.use((req, res, next) => {
+    const url = req.originalUrl;
+    // HTML 요청이 아닌 경우만 Vite 미들웨어로 전달
+    if (url.includes(".") && !url.endsWith(".html")) {
+      return vite.middlewares(req, res, next);
+    }
+    next();
+  });
 
-  app.use("*all", async (req, res, next) => {
+  // 모든 HTML 요청에 대해 SSR 처리
+  app.use(async (req, res, next) => {
     const url = req.originalUrl.replace(base, "/");
 
     try {

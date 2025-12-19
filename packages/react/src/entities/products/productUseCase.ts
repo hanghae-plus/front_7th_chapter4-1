@@ -3,15 +3,15 @@ import { router } from "../../router";
 import type { StringRecord } from "../../types";
 import { initialProductState, PRODUCT_ACTIONS, productStore } from "./productStore";
 import { isNearBottom } from "../../utils";
+import { Router } from "@hanghae-plus/lib";
+import type { FunctionComponent } from "react";
+import { useQueryContext } from "../../contexts/QueryContext";
 
 const createErrorMessage = (error: unknown, defaultMessage = "알 수 없는 오류 발생") =>
   error instanceof Error ? error.message : defaultMessage;
 
 export const loadProductsAndCategories = async () => {
-  // 기존 쿼리 파라미터를 유지하면서 current만 리셋
-  const currentQuery = router.query;
-  const queryWithReset = { ...currentQuery, current: undefined };
-
+  router.query = { current: undefined }; // 항상 첫 페이지로 초기화
   productStore.dispatch({
     type: PRODUCT_ACTIONS.SETUP,
     payload: {
@@ -28,7 +28,7 @@ export const loadProductsAndCategories = async () => {
         pagination: { total },
       },
       categories,
-    ] = await Promise.all([getProducts(queryWithReset), getCategories()]);
+    ] = await Promise.all([getProducts(router.query), getCategories()]);
 
     // 페이지 리셋이면 새로 설정, 아니면 기존에 추가
     productStore.dispatch({
@@ -50,17 +50,20 @@ export const loadProductsAndCategories = async () => {
   }
 };
 
-export const loadProducts = async (resetList = true) => {
+export const loadProducts = async (resetList = true, queryOverride?: StringRecord) => {
   try {
     productStore.dispatch({
       type: PRODUCT_ACTIONS.SETUP,
       payload: { loading: true, status: "pending", error: null },
     });
 
+    // queryOverride가 있으면 사용, 없으면 router.query 사용
+    const query = queryOverride || router.query;
+
     const {
       products,
       pagination: { total },
-    } = await getProducts(router.query);
+    } = await getProducts(query);
     const payload = { products, totalCount: total };
 
     // 페이지 리셋이면 새로 설정, 아니면 기존에 추가
@@ -86,26 +89,35 @@ export const loadMoreProducts = async () => {
     return;
   }
 
-  router.query = { current: Number(router.query.current ?? 1) + 1 };
-  await loadProducts(false);
+  // 현재 쿼리 유지하면서 페이지만 증가
+  const currentQuery = router.query;
+  const newQuery = { ...currentQuery, current: String(Number(currentQuery.current ?? 1) + 1) };
+  const newUrl = Router.getUrl(newQuery);
+  (router as Router<FunctionComponent>).push(newUrl);
+
+  // 새 쿼리를 직접 전달
+  await loadProducts(false, newQuery);
 };
+
 export const searchProducts = (search: string) => {
-  router.query = { search, current: 1 };
+  const newUrl = Router.getUrl({ search, current: 1 });
+  (router as Router<FunctionComponent>).push(newUrl);
 };
 
 export const setCategory = (categoryData: StringRecord) => {
-  router.query = { ...categoryData, current: 1 };
+  const newUrl = Router.getUrl({ ...categoryData, current: 1 });
+  (router as Router<FunctionComponent>).push(newUrl);
 };
 
 export const setSort = (sort: string) => {
-  router.query = { sort, current: 1 };
+  const newUrl = Router.getUrl({ sort, current: 1 });
+  (router as Router<FunctionComponent>).push(newUrl);
 };
 
 export const setLimit = (limit: number) => {
-  router.query = { limit, current: 1 };
+  const newUrl = Router.getUrl({ limit, current: 1 });
+  (router as Router<FunctionComponent>).push(newUrl);
 };
-
-// deprecated: 새로운 구현은 router의 query setter가 기존 쿼리를 merge함
 
 export const loadProductDetailForPage = async (productId: string) => {
   try {
@@ -198,4 +210,54 @@ export const loadNextProducts = async () => {
       console.error("무한 스크롤 로드 실패:", error);
     }
   }
+};
+
+// Context 기반 검색 함수들 (Hook 형태)
+export const useSearchProducts = () => {
+  const { updateQuery } = useQueryContext();
+
+  return (search: string) => {
+    updateQuery({ search, current: 1 });
+  };
+};
+
+export const useSetCategory = () => {
+  const { updateQuery } = useQueryContext();
+
+  return (categoryData: StringRecord) => {
+    updateQuery({ ...categoryData, current: 1 });
+  };
+};
+
+export const useSetSort = () => {
+  const { updateQuery } = useQueryContext();
+
+  return (sort: string) => {
+    updateQuery({ sort, current: 1 });
+  };
+};
+
+export const useSetLimit = () => {
+  const { updateQuery } = useQueryContext();
+
+  return (limit: number) => {
+    updateQuery({ limit, current: 1 });
+  };
+};
+
+export const useLoadMoreProducts = () => {
+  const { query, updateQuery } = useQueryContext();
+
+  return async () => {
+    const state = productStore.getState();
+    const hasMore = state.products.length < state.totalCount;
+
+    if (!hasMore || state.loading) {
+      return;
+    }
+
+    const newQuery = { ...query, current: Number(query.current ?? 1) + 1 };
+    updateQuery(newQuery);
+    await loadProducts(false);
+  };
 };

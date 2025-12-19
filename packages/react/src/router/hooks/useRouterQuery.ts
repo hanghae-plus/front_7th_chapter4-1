@@ -1,20 +1,18 @@
-import { useRouter } from "@hanghae-plus/lib";
+import { useRouter, type RouterInstance } from "@hanghae-plus/lib";
 import { router } from "../router";
-import { useServerRouterContext } from "../RouterContext";
-import type { StringRecord } from "../../types";
+import { useContext } from "react";
+import { QueryContext } from "../../contexts/QueryContext";
+import type { StringRecord, AnyFunction } from "@hanghae-plus/lib";
 
 export const useRouterQuery = (): StringRecord => {
-  // SSR 시 ServerRouter의 query 사용
-  const serverContext = useServerRouterContext();
+  // Context를 안전하게 가져오기 (Provider 없어도 에러 안남)
+  const contextValue = useContext(QueryContext);
+  const routerQuery = useRouter(router as RouterInstance<AnyFunction>, ({ query }) => query);
 
-  // 클라이언트에서 라우터 쿼리 변경 구독
-  const clientQuery = useRouter(router, (r) => r.query);
-
-  // SSR context가 있고 클라이언트가 아니면 그것을 사용
-  // hydration 후에는 클라이언트 라우터 사용
-  if (typeof window === "undefined" && serverContext?.query) {
-    return serverContext.query;
+  // SSR에서는 Context 사용, CSR에서는 라우터 사용
+  if (typeof window === "undefined") {
+    return (contextValue?.query as StringRecord) || {};
   }
 
-  return clientQuery;
+  return routerQuery;
 };
