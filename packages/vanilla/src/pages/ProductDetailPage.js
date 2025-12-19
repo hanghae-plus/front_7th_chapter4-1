@@ -1,6 +1,6 @@
 import { productStore } from "../stores";
 import { loadProductDetailForPage } from "../services";
-import { router, withLifecycle } from "../router";
+import { router, withLifecycle, getSSRData, isSSR } from "../router";
 import { PageWrapper } from "./PageWrapper.js";
 
 const loadingContent = `
@@ -242,7 +242,22 @@ export const ProductDetailPage = withLifecycle(
     watches: [() => [router.params.id], () => loadProductDetailForPage(router.params.id)],
   },
   () => {
-    const { currentProduct: product, relatedProducts = [], error, loading } = productStore.getState();
+    // SSR일 때는 컨텍스트 데이터, CSR일 때는 Store 데이터 사용
+    let product, relatedProducts, error, loading;
+
+    if (isSSR()) {
+      const ssrData = getSSRData();
+      product = ssrData?.product ?? null;
+      relatedProducts = ssrData?.relatedProducts ?? [];
+      loading = false;
+      error = null;
+    } else {
+      const state = productStore.getState();
+      product = state.currentProduct;
+      relatedProducts = state.relatedProducts ?? [];
+      error = state.error;
+      loading = state.loading;
+    }
 
     return PageWrapper({
       headerLeft: `
