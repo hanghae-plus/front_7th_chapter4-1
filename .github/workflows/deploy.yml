@@ -34,11 +34,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build Vanilla SSG
-        run: pnpm -F @hanghae-plus/shopping-vanilla run build:ssg
+      - name: Build Vanilla
+        run: pnpm -F @hanghae-plus/shopping-vanilla run build
 
-      - name: Build React SSG
-        run: pnpm -F @hanghae-plus/shopping-react run build:ssg
+      - name: Build React
+        run: pnpm -F @hanghae-plus/shopping-react run build
 
       - name: Prepare deployment
         run: |
