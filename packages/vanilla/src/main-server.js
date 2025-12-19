@@ -5,8 +5,10 @@ import { ProductDetailPage } from "./pages/ProductDetailPage.js";
 import { router } from "./router/router.js";
 import { generateTitle } from "./utils/updateTitle.js";
 
-async function prefetchData(routeInfo, params, query) {
-  if (routeInfo.path === "/") {
+async function prefetchData(routeInfo, query) {
+  const { path, params } = routeInfo;
+
+  if (path === "/") {
     const [productsData, categories] = await Promise.all([
       getProducts({
         limit: parseInt(query.limit) || 20,
@@ -27,7 +29,7 @@ async function prefetchData(routeInfo, params, query) {
       error: null,
       status: "done",
     };
-  } else if (routeInfo.path === "/product/:id/") {
+  } else if (path === "/product/:id/") {
     const product = await getProduct(params.id);
 
     if (!product) return { error: "Product not found" };
@@ -58,7 +60,7 @@ export async function render(url, query = {}) {
   router.addRoute(".*", NotFoundPage);
 
   const routeInfo = router.match(url, query);
-  const storeData = await prefetchData(routeInfo, routeInfo.params, query);
+  const storeData = await prefetchData(routeInfo, query);
 
   if (!routeInfo || storeData.error) {
     return {
