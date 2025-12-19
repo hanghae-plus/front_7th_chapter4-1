@@ -4,16 +4,13 @@ import routes from "./src/routes.js";
 import { createMiddleware } from "@mswjs/http-middleware";
 import { handlers } from "./src/mocks/handlers.js";
 import { createServer as createViteServer } from "vite";
+import { render } from "./src/main-server.js";
 
 const app = express();
 
 const prod = process.env.NODE_ENV === "production";
 const port = Number(process.env.PORT) || 5173;
 const base = process.env.BASE || (prod ? "/front_7th_chapter4-1/vanilla/" : "/");
-
-const render = async (component) => {
-  return await component();
-};
 
 let vite;
 // if (!prod) {
@@ -42,6 +39,9 @@ routes.forEach((route) => {
       globalThis.pathname = req.url;
       globalThis.params = req.params;
       globalThis.search = req.query;
+      globalThis.initialData = {};
+
+      const html = await render(route.component);
 
       res.send(
         `
@@ -50,15 +50,19 @@ routes.forEach((route) => {
     <head>
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>Vanilla Javascript SSR</title>
+      <title>404 - Page Not Found</title>
+      <meta name="description" content="페이지를 찾을 수 없습니다" />
       <script src="https://cdn.tailwindcss.com"></script>
       <style>
         ${await styles}
       </style>
     </head>
     <body>
-    <div id="root">${await render(route.component)}</div>
+    <div id="root">${html}</div>
     <script type="module" src="/src/main.js"></script>
+    <script>
+      window.__INITIAL_DATA__ = ${JSON.stringify(globalThis.initialData)};
+    </script>
     </body>
     </html>
       `.trim(),
@@ -77,6 +81,25 @@ routes.forEach((route) => {
 
     const html = await render(route.component);
 
+    // 메타태그 생성
+    let metaTags = "";
+    let title = "Vanilla Javascript SSR";
+
+    if (globalThis.initialData.product?.currentProduct) {
+      const product = globalThis.initialData.product.currentProduct;
+      title = `${product.title} - 쇼핑몰`;
+      metaTags = `
+    <meta name="description" content="${product.title} - ${product.brand || "쇼핑몰"}" />
+    <meta property="og:title" content="${product.title}" />
+    <meta property="og:description" content="${product.title} - ${Number(product.lprice).toLocaleString()}원" />
+    <meta property="og:image" content="${product.image}" />`;
+    } else {
+      metaTags = `
+    <meta name="description" content="다양한 상품을 만나보세요" />
+    <meta property="og:title" content="쇼핑몰" />
+    <meta property="og:description" content="다양한 상품을 만나보세요" />`;
+    }
+
     res.send(
       `
   <!DOCTYPE html>
@@ -84,7 +107,7 @@ routes.forEach((route) => {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vanilla Javascript SSR</title>
+    <title>${title}</title>${metaTags}
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
       ${await styles}

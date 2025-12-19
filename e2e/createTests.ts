@@ -666,6 +666,7 @@ export const createSSRTest = (baseUrl: string) => {
 
         // SSR로 렌더링된 초기 HTML에 상품 목록이 포함되어야 함
         const bodyContent = await page.locator("body").textContent();
+
         expect(bodyContent).toContain("총");
         expect(bodyContent).toContain("개");
 
