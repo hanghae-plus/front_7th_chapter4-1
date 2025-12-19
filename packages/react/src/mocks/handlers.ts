@@ -66,7 +66,8 @@ function filterProducts(products: Product[], query: Record<string, string>) {
 
 export const handlers = [
   // 상품 목록 API
-  http.get("/api/products", async ({ request }) => {
+  // NOTE: */api/products 패턴은 SSR에서 절대 URL(http://localhost:PORT/api/...)도 매칭
+  http.get("*/api/products", async ({ request }) => {
     const url = new URL(request.url);
     const page = parseInt(url.searchParams.get("page") ?? url.searchParams.get("current") ?? "1");
     const limit = parseInt(url.searchParams.get("limit") ?? "20");
@@ -113,7 +114,7 @@ export const handlers = [
   }),
 
   // 상품 상세 API
-  http.get("/api/products/:id", ({ params }) => {
+  http.get("*/api/products/:id", ({ params }) => {
     const { id } = params;
     const product = items.find((item) => item.productId === id);
 
@@ -135,7 +136,7 @@ export const handlers = [
   }),
 
   // 카테고리 목록 API
-  http.get("/api/categories", async () => {
+  http.get("*/api/categories", async () => {
     const categories = getUniqueCategories();
     await delay();
     return HttpResponse.json(categories);
