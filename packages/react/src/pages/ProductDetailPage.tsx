@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { ProductDetail, useLoadProductDetail, useProductStore } from "../entities";
 import { PageWrapper } from "./PageWrapper";
 import { ErrorContent, PublicImage } from "../components";
@@ -6,6 +7,13 @@ export const ProductDetailPage = () => {
   const { currentProduct: product, error, loading } = useProductStore();
 
   useLoadProductDetail();
+
+  // 상품명으로 타이틀 업데이트
+  useEffect(() => {
+    if (product) {
+      document.title = `${product.title} - 쇼핑몰`;
+    }
+  }, [product]);
 
   return (
     <PageWrapper

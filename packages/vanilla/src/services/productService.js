@@ -1,9 +1,16 @@
 import { getCategories, getProduct, getProducts } from "../api/productApi";
 import { initialProductState, productStore, PRODUCT_ACTIONS } from "../stores";
-import { router } from "../router";
+import { getQuery, setQuery } from "../router";
 
 export const loadProductsAndCategories = async () => {
-  router.query = { current: undefined }; // 항상 첫 페이지로 초기화
+  const state = productStore.getState();
+
+  // SSR Hydration: 이미 데이터가 있으면 중복 fetch 방지
+  if (state.products.length > 0 && Object.keys(state.categories).length > 0 && !state.loading) {
+    return; // SSR 데이터 사용
+  }
+
+  setQuery({ current: undefined }); // 항상 첫 페이지로 초기화
   productStore.dispatch({
     type: PRODUCT_ACTIONS.SETUP,
     payload: {
@@ -20,7 +27,7 @@ export const loadProductsAndCategories = async () => {
         pagination: { total },
       },
       categories,
-    ] = await Promise.all([getProducts(router.query), getCategories()]);
+    ] = await Promise.all([getProducts(getQuery()), getCategories()]);
 
     // 페이지 리셋이면 새로 설정, 아니면 기존에 추가
     productStore.dispatch({
@@ -55,7 +62,7 @@ export const loadProducts = async (resetList = true) => {
     const {
       products,
       pagination: { total },
-    } = await getProducts(router.query);
+    } = await getProducts(getQuery());
     const payload = { products, totalCount: total };
 
     // 페이지 리셋이면 새로 설정, 아니면 기존에 추가
@@ -84,35 +91,35 @@ export const loadMoreProducts = async () => {
     return;
   }
 
-  router.query = { current: Number(router.query.current ?? 1) + 1 };
+  setQuery({ current: Number(getQuery().current ?? 1) + 1 });
   await loadProducts(false);
 };
 /**
  * 상품 검색
  */
 export const searchProducts = (search) => {
-  router.query = { search, current: 1 };
+  setQuery({ search, current: 1 });
 };
 
 /**
  * 카테고리 필터 설정
  */
 export const setCategory = (categoryData) => {
-  router.query = { ...categoryData, current: 1 };
+  setQuery({ ...categoryData, current: 1 });
 };
 
 /**
  * 정렬 옵션 변경
  */
 export const setSort = (sort) => {
-  router.query = { sort, current: 1 };
+  setQuery({ sort, current: 1 });
 };
 
 /**
  * 페이지당 상품 수 변경
  */
 export const setLimit = (limit) => {
-  router.query = { limit, current: 1 };
+  setQuery({ limit, current: 1 });
 };
 
 /**
@@ -121,13 +128,16 @@ export const setLimit = (limit) => {
 export const loadProductDetailForPage = async (productId) => {
   try {
     const currentProduct = productStore.getState().currentProduct;
+
+    // SSR Hydration: 이미 해당 상품 데이터가 있으면 중복 fetch 방지
     if (productId === currentProduct?.productId) {
-      // 관련 상품 로드 (같은 category2 기준)
+      // 관련 상품만 로드 (같은 category2 기준)
       if (currentProduct.category2) {
         await loadRelatedProducts(currentProduct.category2, productId);
       }
       return;
     }
+
     // 현재 상품 클리어
     productStore.dispatch({
       type: PRODUCT_ACTIONS.SETUP,

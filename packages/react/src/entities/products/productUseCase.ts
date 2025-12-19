@@ -1,5 +1,5 @@
 import { getCategories, getProduct, getProducts } from "../../api/productApi";
-import { router } from "../../router";
+import { getRouter } from "../../router";
 import type { StringRecord } from "../../types";
 import { initialProductState, PRODUCT_ACTIONS, productStore } from "./productStore";
 import { isNearBottom } from "../../utils";
@@ -8,7 +8,21 @@ const createErrorMessage = (error: unknown, defaultMessage = "알 수 없는 오
   error instanceof Error ? error.message : defaultMessage;
 
 export const loadProductsAndCategories = async () => {
-  router.query = { current: undefined }; // 항상 첫 페이지로 초기화
+  // SSR에서 이미 데이터가 hydrate 되었으면 스킵
+  const currentState = productStore.getState();
+  console.log("[loadProductsAndCategories] 현재 상태:", {
+    productsCount: currentState.products.length,
+    status: currentState.status,
+    loading: currentState.loading,
+  });
+
+  if (currentState.products.length > 0 && currentState.status === "done") {
+    console.log("[loadProductsAndCategories] SSR 데이터 있음 - fetch 스킵");
+    return;
+  }
+
+  console.log("[loadProductsAndCategories] 데이터 fetch 시작");
+  getRouter().query = { current: undefined }; // 항상 첫 페이지로 초기화
   productStore.dispatch({
     type: PRODUCT_ACTIONS.SETUP,
     payload: {
@@ -25,7 +39,7 @@ export const loadProductsAndCategories = async () => {
         pagination: { total },
       },
       categories,
-    ] = await Promise.all([getProducts(router.query), getCategories()]);
+    ] = await Promise.all([getProducts(getRouter().query), getCategories()]);
 
     // 페이지 리셋이면 새로 설정, 아니면 기존에 추가
     productStore.dispatch({
@@ -57,7 +71,7 @@ export const loadProducts = async (resetList = true) => {
     const {
       products,
       pagination: { total },
-    } = await getProducts(router.query);
+    } = await getProducts(getRouter().query);
     const payload = { products, totalCount: total };
 
     // 페이지 리셋이면 새로 설정, 아니면 기존에 추가
@@ -83,23 +97,23 @@ export const loadMoreProducts = async () => {
     return;
   }
 
-  router.query = { current: Number(router.query.current ?? 1) + 1 };
+  getRouter().query = { current: Number(getRouter().query.current ?? 1) + 1 };
   await loadProducts(false);
 };
 export const searchProducts = (search: string) => {
-  router.query = { search, current: 1 };
+  getRouter().query = { search, current: 1 };
 };
 
 export const setCategory = (categoryData: StringRecord) => {
-  router.query = { ...categoryData, current: 1 };
+  getRouter().query = { ...categoryData, current: 1 };
 };
 
 export const setSort = (sort: string) => {
-  router.query = { sort, current: 1 };
+  getRouter().query = { sort, current: 1 };
 };
 
 export const setLimit = (limit: number) => {
-  router.query = { limit, current: 1 };
+  getRouter().query = { limit, current: 1 };
 };
 
 export const loadProductDetailForPage = async (productId: string) => {
@@ -174,7 +188,7 @@ export const loadRelatedProducts = async (category2: string, excludeProductId: s
 
 export const loadNextProducts = async () => {
   // 현재 라우트가 홈이 아니면 무한 스크롤 비활성화
-  if (router.route?.path !== "/") {
+  if (getRouter().route?.path !== "/") {
     return;
   }
 

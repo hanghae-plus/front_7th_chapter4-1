@@ -1,3 +1,5 @@
+import { isSSR } from "./ssrContext.js";
+
 const lifeCycles = new WeakMap();
 const pageState = { current: null, previous: null };
 const initLifecycle = { mount: null, unmount: null, watches: [], deps: [], mounted: false };
@@ -34,7 +36,16 @@ const mount = (page) => {
   // 마운트 콜백들 실행
   lifecycle.mount?.();
   lifecycle.mounted = true;
-  lifecycle.deps = [];
+
+  // watches의 초기 deps 저장 (다음 변경 감지를 위해)
+  if (lifecycle.watches) {
+    lifecycle.deps = lifecycle.watches.map(([getDeps]) => {
+      const deps = getDeps();
+      return Array.isArray(deps) ? [...deps] : [];
+    });
+  } else {
+    lifecycle.deps = [];
+  }
 };
 
 // 페이지 언마운트 처리
@@ -63,6 +74,11 @@ export const withLifecycle = ({ onMount, onUnmount, watches } = {}, page) => {
   }
 
   return (...args) => {
+    // SSR에서는 lifecycle 실행 없이 렌더링만
+    if (isSSR()) {
+      return page(...args);
+    }
+
     const wasNewPage = pageState.current !== page;
 
     // 이전 페이지 언마운트

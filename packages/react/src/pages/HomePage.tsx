@@ -28,6 +28,7 @@ const unregisterScrollHandler = () => {
 
 export const HomePage = () => {
   useEffect(() => {
+    document.title = "쇼핑몰 - 홈";
     registerScrollHandler();
     loadProductsAndCategories();
 

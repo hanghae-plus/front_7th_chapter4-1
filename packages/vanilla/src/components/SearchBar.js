@@ -4,6 +4,7 @@
 const OPTION_LIMITS = [10, 20, 50, 100];
 
 export function SearchBar({ searchQuery = "", limit = 20, sort = "price_asc", category = {}, categories = {} }) {
+  console.log(`[SearchBar] searchQuery: "${searchQuery}"`);
   const categoryList = Object.keys(categories).length > 0 ? Object.keys(categories) : [];
   const options = OPTION_LIMITS.map(
     (value) => `

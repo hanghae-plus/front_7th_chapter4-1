@@ -1,13 +1,18 @@
+import { isBrowser } from "../router/ssrContext.js";
+
 /**
  * 로컬스토리지 추상화 함수
  * @param {string} key - 스토리지 키
  * @param {Storage} storage - 기본값은 localStorage
  * @returns {Object} { get, set, reset }
  */
-export const createStorage = (key, storage = window.localStorage) => {
+export const createStorage = (key, storage) => {
+  const safeStorage = storage ?? (isBrowser() ? window.localStorage : null);
+
   const get = () => {
+    if (!safeStorage) return null;
     try {
-      const item = storage.getItem(key);
+      const item = safeStorage.getItem(key);
       return item ? JSON.parse(item) : null;
     } catch (error) {
       console.error(`Error parsing storage item for key "${key}":`, error);
@@ -16,16 +21,18 @@ export const createStorage = (key, storage = window.localStorage) => {
   };
 
   const set = (value) => {
+    if (!safeStorage) return null;
     try {
-      storage.setItem(key, JSON.stringify(value));
+      safeStorage.setItem(key, JSON.stringify(value));
     } catch (error) {
       console.error(`Error setting storage item for key "${key}":`, error);
     }
   };
 
   const reset = () => {
+    if (!safeStorage) return null;
     try {
-      storage.removeItem(key);
+      safeStorage.removeItem(key);
     } catch (error) {
       console.error(`Error removing storage item for key "${key}":`, error);
     }
