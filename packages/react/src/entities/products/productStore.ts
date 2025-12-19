@@ -1,6 +1,19 @@
 import { createStore } from "@hanghae-plus/lib";
 import type { Categories, Product } from "./types";
 
+// window.__INITIAL_DATA__ 타입 선언
+declare global {
+  interface Window {
+    __INITIAL_DATA__?: {
+      products?: Product[];
+      categories?: Categories;
+      totalCount?: number;
+      product?: Product;
+      relatedProducts?: Product[];
+    };
+  }
+}
+
 export const PRODUCT_ACTIONS = {
   // 상품 목록
   SET_PRODUCTS: "products/setProducts",
@@ -124,6 +137,39 @@ const productReducer = (state: typeof initialProductState, action: any) => {
 };
 
 /**
+ * Hydration: window.__INITIAL_DATA__에서 초기 상태 복원
+ */
+const getHydratedState = (): typeof initialProductState => {
+  // 서버 환경에서는 기본 상태 반환
+  if (typeof window === "undefined") {
+    return initialProductState;
+  }
+
+  // 클라이언트에서 SSR 데이터로 초기화
+  const initialData = window.__INITIAL_DATA__;
+  if (!initialData) {
+    return initialProductState;
+  }
+
+  // SSR 데이터로 상태 구성
+  const hydratedState = {
+    ...initialProductState,
+    products: initialData.products ?? [],
+    categories: initialData.categories ?? {},
+    totalCount: initialData.totalCount ?? 0,
+    currentProduct: initialData.product ?? null,
+    relatedProducts: initialData.relatedProducts ?? [],
+    loading: false,
+    status: "done" as const,
+  };
+
+  // 데이터 사용 후 정리 (중복 hydration 방지)
+  delete window.__INITIAL_DATA__;
+
+  return hydratedState;
+};
+
+/**
  * 상품 스토어 생성
  */
-export const productStore = createStore(productReducer, initialProductState);
+export const productStore = createStore(productReducer, getHydratedState());
