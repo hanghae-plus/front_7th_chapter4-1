@@ -7,6 +7,7 @@ import { PageWrapper } from "./PageWrapper.js";
 export const HomePage = withLifecycle(
   {
     onMount: () => {
+      console.log("onMount");
       return loadProductsAndCategories();
     },
     watches: [

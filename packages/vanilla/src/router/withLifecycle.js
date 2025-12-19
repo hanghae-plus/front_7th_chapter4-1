@@ -32,7 +32,7 @@ const depsChanged = (newDeps, oldDeps) => {
 // 페이지 마운트 처리 (async 지원)
 const mount = async (page) => {
   const lifecycle = getPageLifecycle(page);
-  if (lifecycle.mounted) return;
+  if (!isServer && lifecycle.mounted) return;
 
   // 마운트 콜백들 실행 (async일 수 있음)
   if (lifecycle.mount) {
@@ -70,16 +70,17 @@ export const withLifecycle = ({ onMount, onUnmount, watches } = {}, page) => {
   // 서버 환경에서는 async 함수 반환
   if (isServer) {
     return async (...args) => {
-      const wasNewPage = pageState.current !== page;
+      console.log("withLifecycle server");
+      // const wasNewPage = pageState.current !== page;
 
-      // 현재 페이지 설정
-      pageState.previous = pageState.current;
-      pageState.current = page;
+      // // 현재 페이지 설정
+      // pageState.previous = pageState.current;
+      // pageState.current = page;
 
-      // 서버에서는 항상 onMount 실행 후 렌더링
-      if (wasNewPage) {
-        await mount(page);
-      }
+      // // 서버에서는 항상 onMount 실행 후 렌더링
+      // if (wasNewPage) {
+      await mount(page);
+      // }
 
       // 페이지 함수 실행
       return page(...args);

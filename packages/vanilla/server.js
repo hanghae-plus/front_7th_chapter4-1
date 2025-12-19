@@ -79,6 +79,7 @@ routes.forEach((route) => {
     globalThis.search = req.query;
     globalThis.initialData = {};
 
+    console.log("render");
     const html = await render(route.component);
 
     // 메타태그 생성
