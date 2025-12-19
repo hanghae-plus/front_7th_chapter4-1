@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 import { loadNextProducts, loadProductsAndCategories, ProductList, SearchBar } from "../entities";
+import { productStore } from "../entities/products/productStore";
+import { useRouterContext } from "../router/RouterContext";
 import { PageWrapper } from "./PageWrapper";
 
 const headerLeft = (
@@ -10,29 +12,23 @@ const headerLeft = (
   </h1>
 );
 
-// 무한 스크롤 이벤트 등록
-let scrollHandlerRegistered = false;
-
-const registerScrollHandler = () => {
-  if (scrollHandlerRegistered) return;
-
-  window.addEventListener("scroll", loadNextProducts);
-  scrollHandlerRegistered = true;
-};
-
-const unregisterScrollHandler = () => {
-  if (!scrollHandlerRegistered) return;
-  window.removeEventListener("scroll", loadNextProducts);
-  scrollHandlerRegistered = false;
-};
-
 export const HomePage = () => {
-  useEffect(() => {
-    registerScrollHandler();
-    loadProductsAndCategories();
+  const router = useRouterContext();
 
-    return unregisterScrollHandler;
-  }, []);
+  // 무한 스크롤 이벤트 등록
+  useEffect(() => {
+    const scrollHandler = () => loadNextProducts(router);
+    window.addEventListener("scroll", scrollHandler);
+
+    const state = productStore.getState();
+    if (state.products.length === 0 || state.loading) {
+      loadProductsAndCategories(router);
+    }
+
+    return () => {
+      window.removeEventListener("scroll", scrollHandler);
+    };
+  }, [router]);
 
   return (
     <PageWrapper headerLeft={headerLeft}>

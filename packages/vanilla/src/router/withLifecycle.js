@@ -1,3 +1,5 @@
+import { isServer } from "../utils/isServer.js";
+
 const lifeCycles = new WeakMap();
 const pageState = { current: null, previous: null };
 const initLifecycle = { mount: null, unmount: null, watches: [], deps: [], mounted: false };
@@ -63,6 +65,8 @@ export const withLifecycle = ({ onMount, onUnmount, watches } = {}, page) => {
   }
 
   return (...args) => {
+    if (isServer()) return page(...args);
+
     const wasNewPage = pageState.current !== page;
 
     // 이전 페이지 언마운트

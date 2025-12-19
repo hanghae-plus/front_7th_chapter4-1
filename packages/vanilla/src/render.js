@@ -1,7 +1,8 @@
-import { cartStore, productStore, uiStore } from "./stores";
-import { router } from "./router";
 import { HomePage, NotFoundPage, ProductDetailPage } from "./pages";
+import { router } from "./router";
+import { cartStore, productStore, uiStore } from "./stores";
 import { withBatch } from "./utils";
+import { updateTitle } from "./utils/updateTitle.js";
 
 // 홈 페이지 (상품 목록)
 router.addRoute("/", HomePage);
@@ -19,6 +20,9 @@ export const render = withBatch(() => {
 
   // App 컴포넌트 렌더링
   rootElement.innerHTML = PageComponent();
+
+  // 클라이언트 사이드 네비게이션 시 title 업데이트
+  updateTitle();
 });
 
 /**

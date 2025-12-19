@@ -1,20 +1,37 @@
 import fs from "fs";
-
-const render = () => {
-  return `<div>안녕하세요</div>`;
-};
+import path from "path";
 
 async function generateStaticSite() {
-  // HTML 템플릿 읽기
-  const template = fs.readFileSync("../../dist/vanilla/index.html", "utf-8");
+  const { render } = await import("./dist/vanilla-ssr/main-server.js");
+  const template = fs.readFileSync("./dist/vanilla/index.html", "utf-8");
+  const products = JSON.parse(fs.readFileSync("./src/mocks/items.json", "utf-8"));
+  const pages = [{ url: "/", filePath: "../../dist/vanilla/index.html" }];
 
-  // 어플리케이션 렌더링하기
-  const appHtml = render();
+  products.forEach((product) =>
+    pages.push({
+      url: `/product/${product.productId}/`,
+      filePath: `../../dist/vanilla/product/${product.productId}/index.html`,
+    }),
+  );
 
-  // 결과 HTML 생성하기
-  const result = template.replace("<!--app-html-->", appHtml);
-  fs.writeFileSync("../../dist/vanilla/index.html", result);
+  for (const page of pages) {
+    const { html, head, data } = await render(page.url, {});
+
+    const result = template
+      .replace(`<!--app-head-->`, head ?? "")
+      .replace(`<!--app-html-->`, html ?? "")
+      .replace(`<!--app-data-->`, data ?? "");
+
+    const dir = path.dirname(page.filePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
+    fs.writeFileSync(page.filePath, result);
+  }
 }
 
-// 실행
-generateStaticSite();
+generateStaticSite().catch((error) => {
+  console.error("SSG 실패", error);
+  process.exit(1);
+});

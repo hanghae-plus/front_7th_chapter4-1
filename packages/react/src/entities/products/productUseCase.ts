@@ -1,13 +1,14 @@
+import type { RouterInstance } from "@hanghae-plus/lib";
+import type { FunctionComponent } from "react";
 import { getCategories, getProduct, getProducts } from "../../api/productApi";
-import { router } from "../../router";
 import type { StringRecord } from "../../types";
-import { initialProductState, PRODUCT_ACTIONS, productStore } from "./productStore";
 import { isNearBottom } from "../../utils";
+import { initialProductState, PRODUCT_ACTIONS, productStore } from "./productStore";
 
 const createErrorMessage = (error: unknown, defaultMessage = "알 수 없는 오류 발생") =>
   error instanceof Error ? error.message : defaultMessage;
 
-export const loadProductsAndCategories = async () => {
+export const loadProductsAndCategories = async (router: RouterInstance<FunctionComponent>) => {
   router.query = { current: undefined }; // 항상 첫 페이지로 초기화
   productStore.dispatch({
     type: PRODUCT_ACTIONS.SETUP,
@@ -47,7 +48,7 @@ export const loadProductsAndCategories = async () => {
   }
 };
 
-export const loadProducts = async (resetList = true) => {
+export const loadProducts = async (router: RouterInstance<FunctionComponent>, resetList = true) => {
   try {
     productStore.dispatch({
       type: PRODUCT_ACTIONS.SETUP,
@@ -75,7 +76,7 @@ export const loadProducts = async (resetList = true) => {
   }
 };
 
-export const loadMoreProducts = async () => {
+export const loadMoreProducts = async (router: RouterInstance<FunctionComponent>) => {
   const state = productStore.getState();
   const hasMore = state.products.length < state.totalCount;
 
@@ -84,21 +85,21 @@ export const loadMoreProducts = async () => {
   }
 
   router.query = { current: Number(router.query.current ?? 1) + 1 };
-  await loadProducts(false);
+  await loadProducts(router, false);
 };
-export const searchProducts = (search: string) => {
+export const searchProducts = (router: RouterInstance<FunctionComponent>, search: string) => {
   router.query = { search, current: 1 };
 };
 
-export const setCategory = (categoryData: StringRecord) => {
+export const setCategory = (router: RouterInstance<FunctionComponent>, categoryData: StringRecord) => {
   router.query = { ...categoryData, current: 1 };
 };
 
-export const setSort = (sort: string) => {
+export const setSort = (router: RouterInstance<FunctionComponent>, sort: string) => {
   router.query = { sort, current: 1 };
 };
 
-export const setLimit = (limit: number) => {
+export const setLimit = (router: RouterInstance<FunctionComponent>, limit: number) => {
   router.query = { limit, current: 1 };
 };
 
@@ -172,7 +173,7 @@ export const loadRelatedProducts = async (category2: string, excludeProductId: s
   }
 };
 
-export const loadNextProducts = async () => {
+export const loadNextProducts = async (router: RouterInstance<FunctionComponent>) => {
   // 현재 라우트가 홈이 아니면 무한 스크롤 비활성화
   if (router.route?.path !== "/") {
     return;
@@ -188,7 +189,7 @@ export const loadNextProducts = async () => {
     }
 
     try {
-      await loadMoreProducts();
+      await loadMoreProducts(router);
     } catch (error) {
       console.error("무한 스크롤 로드 실패:", error);
     }

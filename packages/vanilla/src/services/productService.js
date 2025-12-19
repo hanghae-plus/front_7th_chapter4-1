@@ -90,29 +90,33 @@ export const loadMoreProducts = async () => {
 /**
  * 상품 검색
  */
-export const searchProducts = (search) => {
+export const searchProducts = async (search) => {
   router.query = { search, current: 1 };
+  await loadProducts(true);
 };
 
 /**
  * 카테고리 필터 설정
  */
-export const setCategory = (categoryData) => {
+export const setCategory = async (categoryData) => {
   router.query = { ...categoryData, current: 1 };
+  await loadProducts(true);
 };
 
 /**
  * 정렬 옵션 변경
  */
-export const setSort = (sort) => {
+export const setSort = async (sort) => {
   router.query = { sort, current: 1 };
+  await loadProducts(true);
 };
 
 /**
  * 페이지당 상품 수 변경
  */
-export const setLimit = (limit) => {
+export const setLimit = async (limit) => {
   router.query = { limit, current: 1 };
+  await loadProducts(true);
 };
 
 /**
