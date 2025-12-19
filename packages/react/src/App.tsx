@@ -1,12 +1,7 @@
-import { router, useCurrentPage } from "./router";
-import { HomePage, NotFoundPage, ProductDetailPage } from "./pages";
+import { useRouter } from "./router";
 import { useLoadCartStore } from "./entities";
 import { ModalProvider, ToastProvider } from "./components";
-
-// 홈 페이지 (상품 목록)
-router.addRoute("/", HomePage);
-router.addRoute("/product/:id/", ProductDetailPage);
-router.addRoute(".*", NotFoundPage);
+import type { FunctionComponent } from "react";
 
 const CartInitializer = () => {
   useLoadCartStore();
@@ -17,7 +12,8 @@ const CartInitializer = () => {
  * 전체 애플리케이션 렌더링
  */
 export const App = () => {
-  const PageComponent = useCurrentPage();
+  const router = useRouter<FunctionComponent>();
+  const PageComponent = router.target;
 
   return (
     <>

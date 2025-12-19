@@ -6,12 +6,14 @@ declare global {
   }
 }
 
-window.__spyCalls = [];
-window.__spyCallsClear = () => {
+if (typeof window !== "undefined") {
   window.__spyCalls = [];
-};
+  window.__spyCallsClear = () => {
+    window.__spyCalls = [];
+  };
+}
 
 export const log: typeof console.log = (...args) => {
-  window.__spyCalls.push(args);
+  if (typeof window !== "undefined") window.__spyCalls.push(args);
   return console.log(...args);
 };

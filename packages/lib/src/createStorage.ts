@@ -1,6 +1,15 @@
 import { createObserver } from "./createObserver.ts";
 
-export const createStorage = <T>(key: string, storage = window.localStorage) => {
+const defaultStorage =
+  typeof window === "undefined"
+    ? {
+        getItem: () => null,
+        setItem: () => null,
+        removeItem: () => null,
+      }
+    : window.localStorage;
+
+export const createStorage = <T>(key: string, storage = defaultStorage) => {
   let data: T | null = JSON.parse(storage.getItem(key) ?? "null");
   const { subscribe, notify } = createObserver();
 

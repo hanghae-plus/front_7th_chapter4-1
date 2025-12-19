@@ -119,6 +119,7 @@ export const setLimit = (limit) => {
  * 상품 상세 페이지용 상품 조회 및 관련 상품 로드
  */
 export const loadProductDetailForPage = async (productId) => {
+  ("loadProductDetailForPage");
   try {
     const currentProduct = productStore.getState().currentProduct;
     if (productId === currentProduct?.productId) {

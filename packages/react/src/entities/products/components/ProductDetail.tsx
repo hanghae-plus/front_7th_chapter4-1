@@ -1,14 +1,13 @@
 import { useState } from "react";
-import { router } from "../../../router";
+import { useRouter, ClientRouter } from "../../../router";
 import type { StringRecord } from "../../../types";
 import type { Product } from "../types";
 import { PublicImage } from "../../../components";
 import RelatedProducts from "./RelatedProducts";
 import { useCartAddCommand } from "../../carts";
-import { log } from "../../../utils";
 
 export function ProductDetail(product: Readonly<Product>) {
-  log(`ProductDetail: ${product.productId}`);
+  const router = useRouter();
   const addToCart = useCartAddCommand();
   const { productId, title, image, lprice, brand, category1, category2 } = product;
   const [cartQuantity, setCartQuantity] = useState(1);
@@ -43,7 +42,9 @@ export function ProductDetail(product: Readonly<Product>) {
 
   const goToHomeWithCategory = async (categories: StringRecord) => {
     const queryString = new URLSearchParams(categories).toString();
-    router.push(`/?${queryString}`);
+    if (router instanceof ClientRouter) {
+      router.push(`/?${queryString}`);
+    }
   };
 
   const goToHomeWithCurrentCategory = async () => {
@@ -52,7 +53,9 @@ export function ProductDetail(product: Readonly<Product>) {
       ...(product?.category2 && { category2: product?.category2 }),
     };
     const queryString = new URLSearchParams(query).toString();
-    router.push(`/?${queryString}`);
+    if (router instanceof ClientRouter) {
+      router.push(`/?${queryString}`);
+    }
   };
 
   return (

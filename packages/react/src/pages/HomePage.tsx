@@ -1,6 +1,13 @@
 import { useEffect } from "react";
-import { loadNextProducts, loadProductsAndCategories, ProductList, SearchBar } from "../entities";
+import {
+  loadNextProducts,
+  loadProductsAndCategories,
+  ProductList,
+  SearchBar,
+  useProductStoreWithSSR,
+} from "../entities";
 import { PageWrapper } from "./PageWrapper";
+import { useRouter } from "../router";
 
 const headerLeft = (
   <h1 className="text-xl font-bold text-gray-900">
@@ -10,29 +17,21 @@ const headerLeft = (
   </h1>
 );
 
-// 무한 스크롤 이벤트 등록
-let scrollHandlerRegistered = false;
-
-const registerScrollHandler = () => {
-  if (scrollHandlerRegistered) return;
-
-  window.addEventListener("scroll", loadNextProducts);
-  scrollHandlerRegistered = true;
-};
-
-const unregisterScrollHandler = () => {
-  if (!scrollHandlerRegistered) return;
-  window.removeEventListener("scroll", loadNextProducts);
-  scrollHandlerRegistered = false;
-};
-
 export const HomePage = () => {
-  useEffect(() => {
-    registerScrollHandler();
-    loadProductsAndCategories();
+  const router = useRouter();
+  const { products, categories, status } = useProductStoreWithSSR();
 
-    return unregisterScrollHandler;
-  }, []);
+  useEffect(() => {
+    const handleScroll = () => loadNextProducts(router);
+    window.addEventListener("scroll", handleScroll);
+    if (products.length > 0 && Object.keys(categories).length > 0 && status === "done") {
+      return;
+    }
+    loadProductsAndCategories(router);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [router]);
 
   return (
     <PageWrapper headerLeft={headerLeft}>

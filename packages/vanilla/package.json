@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port 5173",
-    "dev:ssr": "PORT=5174 node server.js",
+    "dev:ssr": "nodemon server.js",
     "build:client": "rm -rf ./dist/vanilla && vite build --outDir ./dist/vanilla && cp ./dist/vanilla/index.html ./dist/vanilla/404.html",
     "build:client-for-ssg": "rm -rf ../../dist/vanilla && vite build --outDir ../../dist/vanilla",
     "build:server": "vite build --outDir ./dist/vanilla-ssr --ssr src/main-server.js",
@@ -16,7 +16,7 @@
     "prettier:write": "prettier --write ./src",
     "preview:csr": "vite preview --outDir ./dist/vanilla",
     "preview:csr-with-build": "pnpm run build:client && pnpm run preview:csr",
-    "preview:ssr": "PORT=4174 NODE_ENV=production node server.js",
+    "preview:ssr": "PORT=4174 NODE_ENV=production nodemon server.js",
     "preview:ssr-with-build": "pnpm run build:without-ssg && pnpm run preview:ssr",
     "preview:ssg": "vite preview --outDir ../../dist/vanilla --port 4178",
     "preview:ssg-with-build": "pnpm run build && pnpm run preview:ssg",
@@ -60,6 +60,7 @@
   "dependencies": {
     "compression": "^1.8.1",
     "express": "^5.1.0",
-    "sirv": "^3.0.1"
+    "sirv": "^3.0.1",
+    "nodemon": "^3.1.11"
   }
 }

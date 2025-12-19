@@ -3,7 +3,6 @@ export * from "./useCallback";
 export * from "./useDeepMemo";
 export * from "./useMemo";
 export * from "./useRef";
-export * from "./useRouter";
 export * from "./useShallowSelector";
 export * from "./useShallowState";
 export * from "./useStorage";

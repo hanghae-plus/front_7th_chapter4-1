@@ -1,24 +1,33 @@
 import { ProductList, SearchBar } from "../components";
 import { productStore } from "../stores";
-import { router, withLifecycle } from "../router";
+import { router as clientRouter, withLifecycle } from "../router";
 import { loadProducts, loadProductsAndCategories } from "../services";
 import { PageWrapper } from "./PageWrapper.js";
 
 export const HomePage = withLifecycle(
   {
     onMount: () => {
+      const { products, categories, status } = productStore.getState();
+
+      // 데이터가 이미 있고 로딩 완료면 스킵
+      if (products.length > 0 && Object.keys(categories).length > 0 && status === "done") {
+        return;
+      }
       loadProductsAndCategories();
     },
     watches: [
       () => {
-        const { search, limit, sort, category1, category2 } = router.query;
+        const { search, limit, sort, category1, category2 } = clientRouter.query;
         return [search, limit, sort, category1, category2];
       },
       () => loadProducts(true),
     ],
   },
-  () => {
-    const productState = productStore.getState();
+  (serverProps) => {
+    const { serverRouter, ...serverData } = serverProps ?? {};
+    const productState = serverProps ? serverData : productStore.getState();
+    const router = serverProps ? serverRouter : clientRouter;
+
     const { search: searchQuery, limit, sort, category1, category2 } = router.query;
     const { products, loading, error, totalCount, categories } = productState;
     const category = { category1, category2 };
