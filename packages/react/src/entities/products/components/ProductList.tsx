@@ -3,6 +3,7 @@ import { router } from "../../../router";
 import { PublicImage } from "../../../components";
 import { useProductStore } from "../hooks";
 import { loadProducts } from "../productUseCase";
+import type { Product } from "../types";
 
 const retry = async () => {
   try {
@@ -20,9 +21,19 @@ const goToDetailPage = async (productId: string) => {
 /**
  * 상품 목록 컴포넌트
  */
-export function ProductList() {
-  const { products, loading, error, totalCount } = useProductStore();
-  const hasMore = products.length < totalCount;
+export function ProductList({
+  serversideProps,
+}: {
+  serversideProps?: {
+    products: Product[];
+    totalCount: number;
+    loading: boolean;
+    error?: string | null;
+  };
+}) {
+  const storeState = useProductStore();
+  const { products = [], loading, error, totalCount } = serversideProps ?? storeState;
+  const hasMore = products?.length < totalCount;
 
   // 에러 상태
   if (error) {
@@ -45,7 +56,7 @@ export function ProductList() {
   }
 
   // 빈 상태 (검색 결과 없음)
-  if (!loading && products.length === 0) {
+  if (!loading && products?.length === 0) {
     return (
       <div className="text-center py-12">
         <div className="text-gray-400 mb-4">

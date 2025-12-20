@@ -2,6 +2,7 @@ import { App } from "./App";
 import { router } from "./router";
 import { BASE_URL } from "./constants.ts";
 import { createRoot } from "react-dom/client";
+import { hydrateFromServerData } from "./hydration";
 
 const enableMocking = () =>
   import("./mocks/browser").then(({ worker }) =>
@@ -14,6 +15,7 @@ const enableMocking = () =>
   );
 
 function main() {
+  hydrateFromServerData();
   router.start();
 
   const rootElement = document.getElementById("root")!;

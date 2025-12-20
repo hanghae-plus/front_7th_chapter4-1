@@ -7,5 +7,9 @@ const defaultSelector = <T, S = T>(state: T) => state as unknown as S;
 
 export const useRouter = <T extends RouterInstance<AnyFunction>, S>(router: T, selector = defaultSelector<T, S>) => {
   const shallowSelector = useShallowSelector(selector);
-  return useSyncExternalStore(router.subscribe, () => shallowSelector(router));
+  return useSyncExternalStore(
+    router.subscribe,
+    () => shallowSelector(router), // 클라이언트
+    () => shallowSelector(router), // 서버 (동일한 초기 상태)
+  );
 };

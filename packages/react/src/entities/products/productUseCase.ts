@@ -145,18 +145,24 @@ export const loadProductDetailForPage = async (productId: string) => {
   }
 };
 
+export const getRelatedProducts = async (category2: string, excludeProductId: string) => {
+  const params = {
+    category2,
+    limit: String(20), // 관련 상품 20개
+    page: String(1),
+  };
+
+  const response = await getProducts(params);
+
+  // 현재 상품 제외
+  const relatedProducts = response.products.filter((product) => product.productId !== excludeProductId);
+  return relatedProducts;
+};
+
 export const loadRelatedProducts = async (category2: string, excludeProductId: string) => {
   try {
-    const params = {
-      category2,
-      limit: String(20), // 관련 상품 20개
-      page: String(1),
-    };
-
-    const response = await getProducts(params);
-
     // 현재 상품 제외
-    const relatedProducts = response.products.filter((product) => product.productId !== excludeProductId);
+    const relatedProducts = await getRelatedProducts(category2, excludeProductId);
 
     productStore.dispatch({
       type: PRODUCT_ACTIONS.SET_RELATED_PRODUCTS,

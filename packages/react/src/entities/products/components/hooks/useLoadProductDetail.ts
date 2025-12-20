@@ -5,6 +5,6 @@ import { loadProductDetailForPage } from "../../productUseCase";
 export const useLoadProductDetail = () => {
   const productId = useRouterParams((params) => params.id);
   useEffect(() => {
-    loadProductDetailForPage(productId);
+    loadProductDetailForPage(productId as string);
   }, [productId]);
 };

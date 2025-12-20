@@ -1,7 +1,9 @@
 import { productStore } from "../stores";
 import { loadProductDetailForPage } from "../services";
-import { router, withLifecycle } from "../router";
+import { router as clientRouter, withLifecycle } from "../router";
 import { PageWrapper } from "./PageWrapper.js";
+import { getProduct } from "../api/productApi.js";
+import { getRelatedProducts } from "../services/productService.js";
 
 const loadingContent = `
   <div class="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -237,12 +239,17 @@ function ProductDetail({ product, relatedProducts = [] }) {
 export const ProductDetailPage = withLifecycle(
   {
     onMount: () => {
-      loadProductDetailForPage(router.params.id);
+      loadProductDetailForPage(clientRouter.params.id);
     },
-    watches: [() => [router.params.id], () => loadProductDetailForPage(router.params.id)],
+    watches: [() => [clientRouter.params.id], () => loadProductDetailForPage(clientRouter.params.id)],
   },
-  () => {
-    const { currentProduct: product, relatedProducts = [], error, loading } = productStore.getState();
+  (serversideProps) => {
+    const {
+      currentProduct: product,
+      relatedProducts = [],
+      error,
+      loading,
+    } = serversideProps || productStore.getState();
 
     return PageWrapper({
       headerLeft: `
@@ -264,3 +271,11 @@ export const ProductDetailPage = withLifecycle(
     });
   },
 );
+
+ProductDetailPage.loader = async (serverRouter) => {
+  const [currentProduct, relatedProducts] = await Promise.all([
+    getProduct(serverRouter.params?.id),
+    getRelatedProducts(serverRouter.params?.category2 ?? "", serverRouter.params?.id),
+  ]);
+  return { data: { currentProduct, relatedProducts }, title: `${currentProduct?.title} - 쇼핑몰` };
+};

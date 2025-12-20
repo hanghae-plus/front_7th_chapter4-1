@@ -28,6 +28,9 @@ const depsChanged = (newDeps, oldDeps) => {
 
 // 페이지 마운트 처리
 const mount = (page) => {
+  // SSR 환경에서는 mount 실행하지 않음
+  if (typeof window === "undefined") return;
+
   const lifecycle = getPageLifecycle(page);
   if (lifecycle.mounted) return;
 
