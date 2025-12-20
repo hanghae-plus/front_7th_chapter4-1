@@ -74,7 +74,6 @@ export const withLifecycle = ({ onMount, onUnmount, watches } = {}, page) => {
     pageState.previous = pageState.current;
     pageState.current = page;
 
-    // 새 페이지면 마운트, 기존 페이지면 업데이트
     if (wasNewPage) {
       mount(page);
     } else if (lifecycle.watches) {

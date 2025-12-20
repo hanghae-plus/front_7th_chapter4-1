@@ -1,7 +1,8 @@
-import { productStore } from "../stores";
+import { PRODUCT_ACTIONS, productStore } from "../stores";
 import { loadProductDetailForPage } from "../services";
 import { router, withLifecycle } from "../router";
 import { PageWrapper } from "./PageWrapper.js";
+import { getProduct, getProducts } from "../api/productApi.js";
 
 const loadingContent = `
   <div class="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -237,7 +238,39 @@ function ProductDetail({ product, relatedProducts = [] }) {
 export const ProductDetailPage = withLifecycle(
   {
     onMount: () => {
-      loadProductDetailForPage(router.params.id);
+      // 서버 환경에서는 실행하지 않음
+      if (typeof window === "undefined") {
+        return;
+      }
+
+      // SSR 데이터가 있으면 사용 (Hydration)
+      if (window.__INITIAL_DATA__) {
+        const data = window.__INITIAL_DATA__;
+
+        // Store에 데이터 주입
+        productStore.dispatch({
+          type: PRODUCT_ACTIONS.SET_CURRENT_PRODUCT,
+          payload: data.product,
+        });
+
+        if (data.relatedProducts) {
+          productStore.dispatch({
+            type: PRODUCT_ACTIONS.SET_RELATED_PRODUCTS,
+            payload: data.relatedProducts,
+          });
+        }
+
+        // title 업데이트
+        if (data.product?.title) {
+          document.title = `${data.product.title} | 쇼핑몰`;
+        }
+
+        // 데이터 사용 후 제거
+        window.__INITIAL_DATA__ = undefined;
+      } else {
+        // SSR 데이터가 없으면 클라이언트에서 데이터 페칭 (SPA 네비게이션)
+        loadProductDetailForPage(router.params.id);
+      }
     },
     watches: [() => [router.params.id], () => loadProductDetailForPage(router.params.id)],
   },
@@ -264,3 +297,40 @@ export const ProductDetailPage = withLifecycle(
     });
   },
 );
+
+Object.assign(ProductDetailPage, {
+  title: "상품 상세 | 쇼핑몰", // 기본 title (동적으로 변경 가능)
+  async getServerSideProps() {
+    const productId = router.params.id;
+
+    if (!productId) {
+      throw new Error("Product ID is required");
+    }
+
+    try {
+      // 서버에서 상품 정보 가져오기
+      const product = await getProduct(productId);
+
+      // 관련 상품 가져오기 (같은 category2 기준)
+      let relatedProducts = [];
+      if (product.category2) {
+        const response = await getProducts({
+          category2: product.category2,
+          limit: 20,
+          page: 1,
+        });
+
+        // 현재 상품 제외
+        relatedProducts = response.products.filter((p) => p.productId !== productId);
+      }
+
+      return {
+        product,
+        relatedProducts,
+      };
+    } catch (error) {
+      console.error("Failed to load product detail:", error);
+      throw error;
+    }
+  },
+});

@@ -3,21 +3,17 @@
  */
 import { createObserver } from "./createObserver.js";
 
-export class Router {
+export class ServerRouter {
   #routes;
   #route;
   #observer = createObserver();
   #baseUrl;
+  #query;
 
   constructor(baseUrl = "") {
     this.#routes = new Map();
     this.#route = null;
     this.#baseUrl = baseUrl.replace(/\/$/, "");
-
-    window.addEventListener("popstate", () => {
-      this.#route = this.#findRoute();
-      this.#observer.notify();
-    });
   }
 
   get baseUrl() {
@@ -25,12 +21,11 @@ export class Router {
   }
 
   get query() {
-    return Router.parseQuery(window.location.search);
+    return this.#query ?? {};
   }
 
-  set query(newQuery) {
-    const newUrl = Router.getUrl(newQuery, this.#baseUrl);
-    this.push(newUrl);
+  set query(query) {
+    this.#query = typeof query === "string" ? ServerRouter.parseQuery(query) : query;
   }
 
   get params() {
@@ -73,8 +68,8 @@ export class Router {
     });
   }
 
-  #findRoute(url = window.location.pathname) {
-    const { pathname } = new URL(url, window.location.origin);
+  #findRoute(url = "", origin = "http://localhost:3000") {
+    const { pathname } = new URL(url, origin);
     for (const [routePath, route] of this.#routes) {
       const match = pathname.match(route.regex);
       if (match) {
@@ -100,21 +95,9 @@ export class Router {
    */
   push(url) {
     try {
-      // baseUrl이 없으면 자동으로 붙여줌
       let fullUrl = url.startsWith(this.#baseUrl) ? url : this.#baseUrl + (url.startsWith("/") ? url : "/" + url);
 
-      const prevFullUrl = `${window.location.pathname}${window.location.search}`;
-
-      // 히스토리 업데이트
-      if (prevFullUrl !== fullUrl) {
-        window.history.pushState(null, "", fullUrl);
-      }
-
       this.#route = this.#findRoute(fullUrl);
-
-      // 페이지 title 업데이트 (CSR)
-      this.#updateTitle();
-
       this.#observer.notify();
     } catch (error) {
       console.error("라우터 네비게이션 오류:", error);
@@ -126,20 +109,7 @@ export class Router {
    */
   start() {
     this.#route = this.#findRoute();
-    this.#updateTitle();
     this.#observer.notify();
-  }
-
-  /**
-   * 페이지 title 업데이트
-   */
-  #updateTitle() {
-    if (typeof window === "undefined") return;
-
-    const PageComponent = this.target;
-    if (PageComponent?.title) {
-      document.title = PageComponent.title;
-    }
   }
 
   /**
@@ -147,42 +117,12 @@ export class Router {
    * @param {string} search - location.search 또는 쿼리 문자열
    * @returns {Object} 파싱된 쿼리 객체
    */
-  static parseQuery = (search = window.location.search) => {
+  static parseQuery = (search = "") => {
     const params = new URLSearchParams(search);
     const query = {};
     for (const [key, value] of params) {
       query[key] = value;
     }
     return query;
-  };
-
-  /**
-   * 객체를 쿼리 문자열로 변환
-   * @param {Object} query - 쿼리 객체
-   * @returns {string} 쿼리 문자열
-   */
-  static stringifyQuery = (query) => {
-    const params = new URLSearchParams();
-    for (const [key, value] of Object.entries(query)) {
-      if (value !== null && value !== undefined && value !== "") {
-        params.set(key, String(value));
-      }
-    }
-    return params.toString();
-  };
-
-  static getUrl = (newQuery, baseUrl = "") => {
-    const currentQuery = Router.parseQuery();
-    const updatedQuery = { ...currentQuery, ...newQuery };
-
-    // 빈 값들 제거
-    Object.keys(updatedQuery).forEach((key) => {
-      if (updatedQuery[key] === null || updatedQuery[key] === undefined || updatedQuery[key] === "") {
-        delete updatedQuery[key];
-      }
-    });
-
-    const queryString = Router.stringifyQuery(updatedQuery);
-    return `${baseUrl}${window.location.pathname.replace(baseUrl, "")}${queryString ? `?${queryString}` : ""}`;
   };
 }

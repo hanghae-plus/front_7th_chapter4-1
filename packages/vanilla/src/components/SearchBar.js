@@ -4,6 +4,10 @@
 const OPTION_LIMITS = [10, 20, 50, 100];
 
 export function SearchBar({ searchQuery = "", limit = 20, sort = "price_asc", category = {}, categories = {} }) {
+  // searchQuery가 undefined이거나 null이면 빈 문자열로 처리
+  // 문자열이 아닌 경우도 처리
+  const safeSearchQuery = searchQuery != null ? String(searchQuery) : "";
+
   const categoryList = Object.keys(categories).length > 0 ? Object.keys(categories) : [];
   const options = OPTION_LIMITS.map(
     (value) => `
@@ -35,7 +39,7 @@ export function SearchBar({ searchQuery = "", limit = 20, sort = "price_asc", ca
           <input type="text" 
                  id="search-input"
                  placeholder="상품명을 검색해보세요..." 
-                 value="${searchQuery}"
+                 value="${safeSearchQuery}"
                  class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg 
                         focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
           <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
