@@ -13,7 +13,7 @@
     "build:client-for-ssg": "rm -rf ../../dist/react && vite build --outDir ../../dist/react",
     "build:server": "vite build --outDir ./dist/react-ssr --ssr src/main-server.tsx",
     "build:without-ssg": "pnpm run build:client && npm run build:server",
-    "build:ssg": "pnpm run build:client-for-ssg && node static-site-generate.js",
+    "build:ssg": "pnpm run build:client-for-ssg && tsx static-site-generate.ts",
     "build": "npm run build:client && npm run build:server && npm run build:ssg",
     "preview:csr": "vite preview --outDir ./dist/react --port 4175",
     "preview:csr-with-build": "pnpm run build:client && pnpm run preview:csr",
@@ -28,31 +28,32 @@
     "prettier:write": "prettier --write ./src"
   },
   "dependencies": {
+    "@hanghae-plus/lib": "workspace:*",
     "react": "latest",
-    "react-dom": "latest",
-    "@hanghae-plus/lib": "workspace:*"
+    "react-dom": "latest"
   },
   "devDependencies": {
     "@babel/core": "latest",
     "@babel/plugin-transform-react-jsx": "latest",
     "@eslint/js": "^9.16.0",
+    "@types/node": "^24.0.13",
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "@types/use-sync-external-store": "latest",
     "@vitejs/plugin-react": "latest",
-    "@types/node": "^24.0.13",
+    "compression": "^1.7.5",
+    "concurrently": "latest",
     "eslint": "^9.9.0",
-    "eslint-plugin-react-hooks": "^5.2.0",
-    "eslint-plugin-react-refresh": "^0.4.20",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.2.1",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "express": "^5.1.0",
     "msw": "^2.10.2",
     "prettier": "^3.4.2",
-    "typescript": "^5.8.3",
-    "vite": "npm:rolldown-vite@latest",
-    "express": "^5.1.0",
-    "compression": "^1.7.5",
     "sirv": "^3.0.0",
-    "concurrently": "latest"
+    "tsx": "^4.21.0",
+    "typescript": "^5.8.3",
+    "vite": "npm:rolldown-vite@latest"
   }
 }
