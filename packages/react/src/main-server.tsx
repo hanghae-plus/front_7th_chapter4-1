@@ -90,6 +90,10 @@ export const render = async (url: string, query: Record<string, string>): Promis
     }
   }
 
+  // Re-set the server URL right before render to prevent race conditions
+  // (another request may have changed router state during async data fetching)
+  router.setServerUrl(url, query);
+
   const html = renderToString(<App />);
 
   // 클라이언트 hydration용 초기 데이터
