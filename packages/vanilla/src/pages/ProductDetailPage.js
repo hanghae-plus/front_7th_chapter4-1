@@ -241,8 +241,12 @@ export const ProductDetailPage = withLifecycle(
     },
     watches: [() => [router.params.id], () => loadProductDetailForPage(router.params.id)],
   },
-  () => {
-    const { currentProduct: product, relatedProducts = [], error, loading } = productStore.getState();
+  (props) => {
+    // SSR에서는 props 사용, CSR에서는 store 사용
+    const storeState = productStore.getState();
+    const product = props?.product || storeState.currentProduct;
+    const relatedProducts = props?.relatedProducts || storeState.relatedProducts || [];
+    const { error, loading } = storeState;
 
     return PageWrapper({
       headerLeft: `
@@ -256,11 +260,13 @@ export const ProductDetailPage = withLifecycle(
           <h1 class="text-lg font-bold text-gray-900">상품 상세</h1>
         </div>
       `.trim(),
-      children: loading
-        ? loadingContent
-        : error && !product
-          ? ErrorContent({ error })
-          : ProductDetail({ product, relatedProducts }),
+      // SSR에서는 props가 있으면 loading 상태 무시
+      children:
+        !props && loading
+          ? loadingContent
+          : error && !product
+            ? ErrorContent({ error })
+            : ProductDetail({ product, relatedProducts }),
     });
   },
 );

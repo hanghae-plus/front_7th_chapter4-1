@@ -8,6 +8,12 @@ const createErrorMessage = (error: unknown, defaultMessage = "알 수 없는 오
   error instanceof Error ? error.message : defaultMessage;
 
 export const loadProductsAndCategories = async () => {
+  // SSR로 이미 데이터가 있으면 건너뛰기 (Hydration 불일치 방지)
+  const currentState = productStore.getState();
+  if (currentState.status === "done" && currentState.products.length > 0) {
+    return;
+  }
+
   router.query = { current: undefined }; // 항상 첫 페이지로 초기화
   productStore.dispatch({
     type: PRODUCT_ACTIONS.SETUP,
@@ -104,14 +110,14 @@ export const setLimit = (limit: number) => {
 
 export const loadProductDetailForPage = async (productId: string) => {
   try {
-    const currentProduct = productStore.getState().currentProduct;
-    if (productId === currentProduct?.productId) {
-      // 관련 상품 로드 (같은 category2 기준)
-      if (currentProduct.category2) {
-        await loadRelatedProducts(currentProduct.category2, productId);
-      }
+    const state = productStore.getState();
+    const currentProduct = state.currentProduct;
+
+    // SSR로 이미 데이터가 있으면 건너뛰기 (Hydration 불일치 방지)
+    if (productId === currentProduct?.productId && state.status === "done") {
       return;
     }
+
     // 현재 상품 클리어
     productStore.dispatch({
       type: PRODUCT_ACTIONS.SETUP,

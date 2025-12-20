@@ -2,9 +2,9 @@ import { cartStore, uiStore } from "../stores";
 import { CartModal, Footer, Toast } from "../components";
 
 export const PageWrapper = ({ headerLeft, children }) => {
-  const cart = cartStore.getState();
-  const { cartModal, toast } = uiStore.getState();
-  const cartSize = cart.items.length;
+  const cart = cartStore?.getState();
+  const { cartModal, toast } = uiStore?.getState() ?? {};
+  const cartSize = cart?.items?.length ?? 0;
 
   const cartCount = `
     <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">

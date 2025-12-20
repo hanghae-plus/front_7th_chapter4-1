@@ -4,11 +4,14 @@
  * @param {Storage} storage - 기본값은 localStorage
  * @returns {Object} { get, set, reset }
  */
-export const createStorage = (key, storage = window.localStorage) => {
+export const createStorage = (key, storage) => {
+  // 함수 내부에서 storage 결정 (호출 시점에 평가)
+  const actualStorage = storage ?? (typeof window !== "undefined" ? window.localStorage : null);
+
   const get = () => {
     try {
-      const item = storage.getItem(key);
-      return item ? JSON.parse(item) : null;
+      const item = actualStorage?.getItem(key);
+      return item ? JSON.parse(item ?? "null") : null;
     } catch (error) {
       console.error(`Error parsing storage item for key "${key}":`, error);
       return null;
@@ -17,7 +20,7 @@ export const createStorage = (key, storage = window.localStorage) => {
 
   const set = (value) => {
     try {
-      storage.setItem(key, JSON.stringify(value));
+      actualStorage?.setItem(key, JSON.stringify(value));
     } catch (error) {
       console.error(`Error setting storage item for key "${key}":`, error);
     }
@@ -25,7 +28,7 @@ export const createStorage = (key, storage = window.localStorage) => {
 
   const reset = () => {
     try {
-      storage.removeItem(key);
+      actualStorage?.removeItem(key);
     } catch (error) {
       console.error(`Error removing storage item for key "${key}":`, error);
     }

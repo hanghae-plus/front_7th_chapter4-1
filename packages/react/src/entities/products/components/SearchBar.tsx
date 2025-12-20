@@ -1,4 +1,4 @@
-import { type ChangeEvent, Fragment, type KeyboardEvent, type MouseEvent } from "react";
+import { type ChangeEvent, Fragment, type KeyboardEvent, type MouseEvent, useState, useEffect } from "react";
 import { PublicImage } from "../../../components";
 import { useProductStore } from "../hooks";
 import { useProductFilter } from "./hooks";
@@ -89,7 +89,19 @@ const handleSubCategoryClick = async (e: MouseEvent<HTMLButtonElement>) => {
 
 export function SearchBar() {
   const { categories } = useProductStore();
-  const { searchQuery, limit = "20", sort, category } = useProductFilter();
+  const { searchQuery = "", limit = "20", sort, category } = useProductFilter();
+
+  // 검색어 로컬 상태 (controlled input)
+  const [inputValue, setInputValue] = useState(searchQuery);
+
+  // URL 쿼리 변경 시 입력값 동기화
+  useEffect(() => {
+    setInputValue(searchQuery);
+  }, [searchQuery]);
+
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setInputValue(e.target.value);
+  };
 
   const categoryList = Object.keys(categories).length > 0 ? Object.keys(categories) : [];
   const limitOptions = OPTION_LIMITS.map((value) => (
@@ -124,7 +136,8 @@ export function SearchBar() {
             type="text"
             id="search-input"
             placeholder="상품명을 검색해보세요..."
-            defaultValue={searchQuery}
+            value={inputValue}
+            onChange={handleInputChange}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg
                         focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             onKeyDown={handleSearchKeyDown}
