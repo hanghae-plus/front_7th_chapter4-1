@@ -1,5 +1,8 @@
 import fs from "node:fs/promises";
 import express from "express";
+import { server as mswServer } from "./src/mocks/node.js";
+
+mswServer.listen({ onUnhandledRequest: "bypass" });
 
 globalThis.window = {
   localStorage: {
@@ -40,7 +43,10 @@ if (!prod) {
 
 // SSR Render
 app.get("*all", async (req, res) => {
-  const url = req.originalUrl.replace(base, "");
+  let url = req.originalUrl.replace(base, "");
+  if (!url.startsWith("/")) {
+    url = "/" + url;
+  }
 
   /** @type {string} */
   let template;
@@ -58,7 +64,10 @@ app.get("*all", async (req, res) => {
 
   const rendered = await render(url);
 
-  const html = template.replace(`<!--app-head-->`, rendered.head ?? "").replace(`<!--app-html-->`, rendered.html ?? "");
+  const html = template
+    .replace(`<!--app-head-->`, rendered.head ?? "")
+    .replace(`<!--app-html-->`, rendered.html ?? "")
+    .replace(`</head>`, `${rendered.initialDataScript ?? ""}</head>`);
 
   res.send(html);
 });

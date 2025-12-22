@@ -3,11 +3,15 @@ import { createServerRuntime } from "./lib/router/server-adapter";
 import { pageConfigs } from "./pages/page-configs.js";
 
 export const render = async (url) => {
+  console.log("[render]", { url });
   const runtime = createServerRuntime(url);
   const router = new CoreRouter(runtime, "");
 
   Object.entries(pageConfigs).forEach(([route, config]) => {
-    router.addRoute(route, config.ssrRender, { hydrate: config.hydrate });
+    router.addRoute(route, config.ssrRender, {
+      hydrate: config.hydrate,
+      getServerSideProps: config.getServerSideProps,
+    });
   });
 
   router.start();
@@ -18,8 +22,7 @@ export const render = async (url) => {
   };
 
   const matchedRoute = router.route;
-  const pageConfig = matchedRoute ? pageConfigs[matchedRoute.path] : null;
-  const getServerSideProps = pageConfig?.getServerSideProps;
+  const getServerSideProps = matchedRoute?.meta?.getServerSideProps;
 
   const serverSideData = await getServerSideProps(ctx);
   const props = serverSideData.props ?? {};
