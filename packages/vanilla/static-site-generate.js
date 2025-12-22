@@ -1,20 +1,25 @@
 import fs from "fs";
+import path from "path";
 
-const render = () => {
-  return `<div>안녕하세요</div>`;
-};
+import { render } from "./dist/vanilla-ssr/main-server.js";
 
-async function generateStaticSite() {
-  // HTML 템플릿 읽기
-  const template = fs.readFileSync("../../dist/vanilla/index.html", "utf-8");
+const DIST_DIR = "../../dist/vanilla";
 
-  // 어플리케이션 렌더링하기
-  const appHtml = render();
+export async function generateStaticSite(url) {
+  const template = fs.readFileSync(path.join(DIST_DIR, "index.html"), "utf-8");
 
-  // 결과 HTML 생성하기
-  const result = template.replace("<!--app-html-->", appHtml);
-  fs.writeFileSync("../../dist/vanilla/index.html", result);
+  const appHtml = await render(url);
+
+  const fileName = url === "/" ? "/index" : url.replace(/\/$/, "");
+  const outputPath = path.join(DIST_DIR, `${fileName}.html`);
+
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+
+  const result = template
+    .replace("<!--app-html-->", appHtml.html)
+    .replace("<!--app-head-->", appHtml.head)
+    .replace("</head>", `${appHtml.initialDataScript ?? ""}</head>`);
+
+  fs.writeFileSync(outputPath, result);
+  console.log(`Generated static site: ${outputPath}`);
 }
-
-// 실행
-generateStaticSite();

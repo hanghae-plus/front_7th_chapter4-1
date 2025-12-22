@@ -5,5 +5,5 @@ import NotFoundPage from "./NotFoundPage";
 export const pageConfigs = {
   "/": HomePage,
   "/product/:id/": ProductDetailPage,
-  ".*": NotFoundPage,
+  "/404": NotFoundPage,
 };
