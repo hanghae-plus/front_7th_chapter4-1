@@ -9,7 +9,7 @@ const port = process.env.PORT || 5173;
 const base = process.env.BASE || (prod ? "/front_7th_chapter4-1/vanilla/" : "/");
 
 // Cached production assets
-const templateHtml = prod ? await fs.readFile("./dist/client/index.html", "utf-8") : "";
+const templateHtml = prod ? await fs.readFile("./dist/vanilla/index.html", "utf-8") : "";
 
 const app = express();
 
@@ -28,7 +28,7 @@ if (!prod) {
   const compression = (await import("compression")).default;
   const sirv = (await import("sirv")).default;
   app.use(compression());
-  app.use(base, sirv("./dist/client", { extensions: [] }));
+  app.use(base, sirv("./dist/vanilla", { extensions: [] }));
 }
 
 // SSR Render
@@ -49,7 +49,7 @@ app.get("*all", async (req, res) => {
     render = (await vite.ssrLoadModule("/src/main-server.js")).render;
   } else {
     template = templateHtml;
-    render = (await import("./dist/server/main-server.js")).render;
+    render = (await import("./dist/vanilla-ssr/main-server.js")).render;
   }
 
   const rendered = await render(url);
