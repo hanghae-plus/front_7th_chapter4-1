@@ -1,57 +1,38 @@
 import { CoreRouter } from "./lib/router/CoreRouter";
 import { createServerRuntime } from "./lib/router/server-adapter";
-import { HomePage, NotFoundPage, ProductDetailPage } from "./pages";
+import { pageConfigs } from "./pages/page-configs.js";
 
 export const render = async (url) => {
   const runtime = createServerRuntime(url);
-  const router = new CoreRouter(runtime, "/app");
+  const router = new CoreRouter(runtime, "");
 
-  router.addRoute("/", HomePage, { title: "Home", description: "Home page" });
-  router.addRoute("/product/:id/", ProductDetailPage, { title: "Product Detail", description: "Product detail page" });
-  router.addRoute(".*", NotFoundPage, { title: "Not Found", description: "Not found page" });
+  Object.entries(pageConfigs).forEach(([route, config]) => {
+    router.addRoute(route, config.ssrRender, { hydrate: config.hydrate });
+  });
 
   router.start();
 
-  const html = router.target ? await router.target() : "<div>Not Found</div>";
-  const title = router.route?.meta?.title ?? "Not Found";
-  const description = router.route?.meta?.description ?? "Not Found";
+  const ctx = {
+    params: router.params,
+    query: router.query,
+  };
 
-  // 1. Store 초기화
-  // 2. 라우트 매칭
-  // 3. 데이터 프리페칭
-  // const html = page();
-  // 4. HTML 생성
+  const matchedRoute = router.route;
+  const pageConfig = matchedRoute ? pageConfigs[matchedRoute.path] : null;
+  const getServerSideProps = pageConfig?.getServerSideProps;
+
+  const serverSideData = await getServerSideProps(ctx);
+  const props = serverSideData.props ?? {};
+  const head = serverSideData.head ?? { title: "Not Found", description: "" };
+
+  const pageComponent = router.target;
+  const html = pageComponent ? pageComponent(props) : "<div>Not Found</div>";
+
+  const initialDataScript = `<script>window.__INITIAL_DATA__=${JSON.stringify(props)};window.__HYDRATED__=true;</script>`;
 
   return {
     html,
-    head: `<title>${title}</title><meta name="description" content="${description}">`,
-    initialDataScript: "<script>console.log('initialData')</script>",
+    head: `<title>${head.title}</title><meta name="description" content="${head.description}">`,
+    initialDataScript,
   };
 };
-
-// // 서버 라우터
-// const serverRouter = (url) => {
-//   const route = pageRegistry.get(url);
-//   if (route) {
-//     return route;
-//   }
-//   return NotFoundPage;
-// };
-
-// // 페이지 레지스트리
-// const pageRegistry = new Map();
-// pageRegistry.set("/", {
-//   page: HomePage,
-//   title: "Home",
-//   description: "Home page",
-// });
-// pageRegistry.set("/product/:id/", {
-//   page: ProductDetailPage,
-//   title: "Product Detail",
-//   description: "Product detail page",
-// });
-// pageRegistry.set(".*", {
-//   page: NotFoundPage,
-//   title: "Not Found",
-//   description: "Not found page",
-// });
