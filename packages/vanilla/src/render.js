@@ -1,11 +1,12 @@
 import { cartStore, productStore, uiStore } from "./stores";
 import { router } from "./router";
 import HomePage from "./pages/HomePage";
+import ProductDetailPage from "./pages/ProductDetailPage";
 import { withBatch } from "./utils";
 
 // 홈 페이지 (상품 목록)
 router.addRoute("/", HomePage.page);
-// router.addRoute("/product/:id/", ProductDetailPage);
+router.addRoute("/product/:id/", ProductDetailPage.page);
 // router.addRoute(".*", NotFoundPage);
 
 /**
