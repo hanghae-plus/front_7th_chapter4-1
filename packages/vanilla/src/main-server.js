@@ -5,23 +5,24 @@ import NotFoundPage from "./pages/NotFoundPage.js";
 
 export const render = async (url) => {
   const runtime = createServerRuntime(url);
-  const router = new CoreRouter(runtime, "");
+  const ssrRouter = new CoreRouter(runtime, "");
 
   Object.entries(pageConfigs).forEach(([route, config]) => {
-    router.addRoute(route, config.ssrRender, {
+    ssrRouter.addRoute(route, config.ssrRender, {
       hydrate: config.hydrate,
       getServerSideProps: config.getServerSideProps,
+      initializeStoreFromSSR: config.initializeStoreFromSSR,
     });
   });
 
-  router.start();
+  ssrRouter.start();
 
   const ctx = {
-    params: router.params,
-    query: router.query,
+    params: ssrRouter.params,
+    query: ssrRouter.query,
   };
 
-  const matchedRoute = router.route;
+  const matchedRoute = ssrRouter.route;
   const getServerSideProps = matchedRoute?.meta?.getServerSideProps;
 
   const serverSideData = getServerSideProps ? await getServerSideProps(ctx) : { props: {}, head: null };
@@ -35,11 +36,16 @@ export const render = async (url) => {
     };
   }
 
+  const initializeStoreFromSSR = matchedRoute?.meta?.initializeStoreFromSSR;
+  if (initializeStoreFromSSR) {
+    await initializeStoreFromSSR(serverSideData.props);
+  }
+
   const props = serverSideData.props ?? {};
   const head = serverSideData.head ?? { title: "페이지를 찾을 수 없습니다", description: "404 Not Found" };
 
-  const pageComponent = router.target;
-  const html = pageComponent ? pageComponent(props) : "<div>Not Found</div>";
+  const pageComponent = ssrRouter.target;
+  const html = pageComponent ? pageComponent(props, ssrRouter) : "<div>Not Found</div>";
 
   const initialDataScript = getServerSideProps
     ? `<script>window.__INITIAL_DATA__=${JSON.stringify(props)};window.__HYDRATED__=true;</script>`

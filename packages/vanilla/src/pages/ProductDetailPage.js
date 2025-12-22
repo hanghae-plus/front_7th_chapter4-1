@@ -254,7 +254,7 @@ async function getServerSideProps({ params }) {
       return {
         props: { product, relatedProducts },
         head: {
-          title: product.title,
+          title: `${product.title} - 쇼핑몰`,
           description: product.description ?? "",
         },
       };
@@ -263,7 +263,7 @@ async function getServerSideProps({ params }) {
     return {
       props: { product, relatedProducts: [] },
       head: {
-        title: product.title,
+        title: `${product.title} - 쇼핑몰`,
         description: product.description ?? "",
       },
     };
@@ -273,9 +273,7 @@ async function getServerSideProps({ params }) {
   }
 }
 
-async function hydrate() {
-  if (import.meta.env.SSR) return;
-  const data = window.__INITIAL_DATA__;
+async function initializeStore(data) {
   productStore.dispatch({
     type: PRODUCT_ACTIONS.SET_CURRENT_PRODUCT,
     payload: data.product,
@@ -285,6 +283,14 @@ async function hydrate() {
     payload: data.relatedProducts ?? [],
   });
 }
+
+async function hydrate() {
+  if (import.meta.env.SSR) return;
+  const data = window.__INITIAL_DATA__;
+  initializeStore(data);
+}
+
+const initializeStoreFromSSR = initializeStore;
 
 const renderProductDetailPage = () => {
   const { currentProduct: product, relatedProducts = [], error, loading } = productStore.getState();
@@ -331,5 +337,6 @@ export default {
   page: ProductDetailPage,
   ssrRender: ProductDetailPageSSR,
   getServerSideProps,
+  initializeStoreFromSSR,
   hydrate,
 };

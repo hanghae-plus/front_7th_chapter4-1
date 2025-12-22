@@ -17,15 +17,13 @@ async function getServerSideProps({ query }) {
       totalCount: productsRes.pagination.total,
     },
     head: {
-      title: "쇼핑몰",
+      title: "쇼핑몰 - 홈",
       description: `${productsRes.pagination.total}개 상품`,
     },
   };
 }
 
-async function hydrate() {
-  if (import.meta.env.SSR) return;
-  const data = window.__INITIAL_DATA__;
+async function initializeStore(data) {
   productStore.dispatch({
     type: PRODUCT_ACTIONS.SETUP,
     payload: {
@@ -36,9 +34,17 @@ async function hydrate() {
   });
 }
 
-const renderHomePage = () => {
+async function hydrate() {
+  if (import.meta.env.SSR) return;
+  const data = window.__INITIAL_DATA__;
+  initializeStore(data);
+}
+
+const initializeStoreFromSSR = initializeStore;
+
+const renderHomePage = (props, _router = router) => {
   const productState = productStore.getState();
-  const { search: searchQuery, limit, sort, category1, category2 } = router.query;
+  const { search: searchQuery, limit, sort, category1, category2 } = _router.query;
   const { products, loading, error, totalCount, categories } = productState;
   const category = { category1, category2 };
   const hasMore = products.length < totalCount;
@@ -95,6 +101,7 @@ export default {
   route,
   hydrate,
   getServerSideProps,
+  initializeStoreFromSSR,
   page: HomePage,
   ssrRender: HomePageSSR,
 };
