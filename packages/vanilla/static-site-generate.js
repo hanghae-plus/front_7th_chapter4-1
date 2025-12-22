@@ -10,7 +10,14 @@ export async function generateStaticSite(url) {
 
   const appHtml = await render(url);
 
-  const fileName = url === "/" ? "/index" : url.replace(/\/$/, "");
+  let fileName;
+  if (url === "/") {
+    fileName = "/index";
+  } else if (url.endsWith("/")) {
+    fileName = `${url}index`;
+  } else {
+    fileName = url;
+  }
   const outputPath = path.join(DIST_DIR, `${fileName}.html`);
 
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
