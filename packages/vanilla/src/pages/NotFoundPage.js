@@ -37,3 +37,10 @@ export const NotFoundPage = () =>
       </div>
     `.trim(),
   });
+
+export default {
+  page: NotFoundPage,
+  ssrRender: NotFoundPage,
+  getServerSideProps: null,
+  hydrate: null,
+};
