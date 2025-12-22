@@ -4,16 +4,6 @@ import { server as mswServer } from "./src/mocks/node.js";
 
 mswServer.listen({ onUnhandledRequest: "bypass" });
 
-globalThis.window = {
-  localStorage: {
-    getItem: () => null,
-    setItem: () => null,
-    removeItem: () => null,
-  },
-  addEventListener: () => null,
-  removeEventListener: () => null,
-};
-
 const prod = process.env.NODE_ENV === "production";
 const port = process.env.PORT || 5173;
 const base = process.env.BASE || (prod ? "/front_7th_chapter4-1/vanilla/" : "/");
