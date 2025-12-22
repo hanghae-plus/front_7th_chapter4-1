@@ -233,32 +233,44 @@ function ProductDetail({ product, relatedProducts = [] }) {
 }
 
 async function getServerSideProps({ params }) {
-  const product = await getProduct(params.id);
+  try {
+    const product = await getProduct(params.id);
 
-  if (product.category2) {
-    const params = {
-      category2: product.category2,
-      limit: 20, // 관련 상품 20개
-      page: 1,
-    };
+    if (!product || !product.productId) {
+      return { notFound: true };
+    }
 
-    const excludeProductId = product.productId;
+    if (product.category2) {
+      const categoryParams = {
+        category2: product.category2,
+        limit: 20,
+        page: 1,
+      };
 
-    const response = await getProducts(params);
+      const excludeProductId = product.productId;
+      const response = await getProducts(categoryParams);
 
-    // 현재 상품 제외
-    const relatedProducts = response.products.filter((product) => product.productId !== excludeProductId);
+      const relatedProducts = response.products.filter((p) => p.productId !== excludeProductId);
+      return {
+        props: { product, relatedProducts },
+        head: {
+          title: product.title,
+          description: product.description ?? "",
+        },
+      };
+    }
+
     return {
-      props: { product, relatedProducts },
+      props: { product, relatedProducts: [] },
+      head: {
+        title: product.title,
+        description: product.description ?? "",
+      },
     };
+  } catch (error) {
+    console.warn("[getServerSideProps]", error);
+    return { notFound: true };
   }
-  return {
-    props: { product, relatedProducts: [] },
-    head: {
-      title: product.title,
-      description: product.description,
-    },
-  };
 }
 
 async function hydrate() {

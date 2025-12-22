@@ -204,8 +204,19 @@ export class CoreRouter {
    * Compile "/product/:id" to regex + paramNames.
    * Note: core matches app-local pathname (baseUrl removed already),
    * so regex should be built WITHOUT baseUrl.
+   *
+   * Special patterns:
+   * - "*" or ".*" → catch-all (matches any path)
    */
   static compilePath(pathPattern) {
+    // Handle catch-all patterns
+    if (pathPattern === "*" || pathPattern === ".*") {
+      return {
+        regex: /^.*$/,
+        paramNames: [],
+      };
+    }
+
     let p = pathPattern.startsWith("/") ? pathPattern : `/${pathPattern}`;
     if (p.length > 1) p = p.replace(/\/+$/, "");
 

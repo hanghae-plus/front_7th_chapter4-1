@@ -1,9 +1,9 @@
 import { CoreRouter } from "./lib/router/CoreRouter";
 import { createServerRuntime } from "./lib/router/server-adapter";
 import { pageConfigs } from "./pages/page-configs.js";
+import NotFoundPage from "./pages/NotFoundPage.js";
 
 export const render = async (url) => {
-  console.log("[render]", { url });
   const runtime = createServerRuntime(url);
   const router = new CoreRouter(runtime, "");
 
@@ -24,14 +24,26 @@ export const render = async (url) => {
   const matchedRoute = router.route;
   const getServerSideProps = matchedRoute?.meta?.getServerSideProps;
 
-  const serverSideData = await getServerSideProps(ctx);
+  const serverSideData = getServerSideProps ? await getServerSideProps(ctx) : { props: {}, head: null };
+
+  if (serverSideData.notFound) {
+    return {
+      html: NotFoundPage.ssrRender(),
+      head: `<title>페이지를 찾을 수 없습니다</title><meta name="description" content="404 Not Found">`,
+      initialDataScript: "",
+      statusCode: 404,
+    };
+  }
+
   const props = serverSideData.props ?? {};
-  const head = serverSideData.head ?? { title: "Not Found", description: "" };
+  const head = serverSideData.head ?? { title: "페이지를 찾을 수 없습니다", description: "404 Not Found" };
 
   const pageComponent = router.target;
   const html = pageComponent ? pageComponent(props) : "<div>Not Found</div>";
 
-  const initialDataScript = `<script>window.__INITIAL_DATA__=${JSON.stringify(props)};window.__HYDRATED__=true;</script>`;
+  const initialDataScript = getServerSideProps
+    ? `<script>window.__INITIAL_DATA__=${JSON.stringify(props)};window.__HYDRATED__=true;</script>`
+    : "";
 
   return {
     html,
