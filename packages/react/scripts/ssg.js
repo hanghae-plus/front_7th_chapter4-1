@@ -1,6 +1,7 @@
 import { generateStaticSite } from "../static-site-generate.js";
 
-import { server as mswServer } from "../src/mocks/node.ts";
+// Use the built mocks file instead of .ts source for Node.js compatibility
+import { server as mswServer } from "../dist/react-ssr/mocks/node.js";
 mswServer.listen({ onUnhandledRequest: "bypass" });
 
 async function getProductIds() {
