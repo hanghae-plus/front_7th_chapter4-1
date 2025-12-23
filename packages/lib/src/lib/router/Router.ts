@@ -80,7 +80,15 @@ export class Router<Handler extends (...args: any[]) => any> {
 
   subscribe = this.#observer.subscribe;
 
+  hasRoute(pathPattern: string): boolean {
+    return this.#routes.some((r) => r.path === pathPattern);
+  }
+
   addRoute(pathPattern: string, handler: Handler, meta = {}) {
+    // Prevent duplicate route registration
+    if (this.hasRoute(pathPattern)) {
+      return;
+    }
     const compiled = Router.compilePath(pathPattern);
     this.#routes.push({
       regex: compiled.regex,
