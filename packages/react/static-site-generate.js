@@ -1,18 +1,33 @@
-import { renderToString } from "react-dom/server";
-import { createElement } from "react";
 import fs from "fs";
 
-async function generateStaticSite() {
-  // HTML 템플릿 읽기
-  const template = fs.readFileSync("../../dist/react/index.html", "utf-8");
+import path from "path";
 
-  // 어플리케이션 렌더링하기
-  const appHtml = renderToString(createElement("div", null, "안녕하세요"));
+import { render } from "./dist/react-ssr/main-server.js";
 
-  // 결과 HTML 생성하기
-  const result = template.replace("<!--app-html-->", appHtml);
-  fs.writeFileSync("../../dist/react/index.html", result);
+const DIST_DIR = "../../dist/react";
+
+export async function generateStaticSite(url) {
+  const template = fs.readFileSync(path.join(DIST_DIR, "index.html"), "utf-8");
+
+  const appHtml = await render(url);
+
+  let fileName;
+  if (url === "/") {
+    fileName = "/index";
+  } else if (url.endsWith("/")) {
+    fileName = `${url}index`;
+  } else {
+    fileName = url;
+  }
+  const outputPath = path.join(DIST_DIR, `${fileName}.html`);
+
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+
+  const result = template
+    .replace("<!--app-html-->", appHtml.html)
+    .replace("<!--app-head-->", appHtml.head)
+    .replace("</head>", `${appHtml.initialDataScript ?? ""}</head>`);
+
+  fs.writeFileSync(outputPath, result);
+  console.log(`Generated static site: ${outputPath}`);
 }
-
-// 실행
-generateStaticSite();
