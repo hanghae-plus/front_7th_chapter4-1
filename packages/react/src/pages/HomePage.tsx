@@ -10,7 +10,6 @@ const headerLeft = (
   </h1>
 );
 
-// 무한 스크롤 이벤트 등록
 let scrollHandlerRegistered = false;
 
 const registerScrollHandler = () => {
@@ -29,6 +28,12 @@ const unregisterScrollHandler = () => {
 export const HomePage = () => {
   useEffect(() => {
     registerScrollHandler();
+
+    if (window.__HYDRATED__) {
+      window.__HYDRATED__ = false;
+      return unregisterScrollHandler;
+    }
+
     loadProductsAndCategories();
 
     return unregisterScrollHandler;

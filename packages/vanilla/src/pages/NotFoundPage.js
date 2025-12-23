@@ -1,6 +1,8 @@
 import { PageWrapper } from "./PageWrapper";
 import { Logo } from "../components";
 
+export const route = "/404";
+
 export const NotFoundPage = () =>
   PageWrapper({
     headerLeft: Logo(),
@@ -37,3 +39,12 @@ export const NotFoundPage = () =>
       </div>
     `.trim(),
   });
+
+export default {
+  route,
+  page: NotFoundPage,
+  ssrRender: NotFoundPage,
+  getServerSideProps: null,
+  hydrate: null,
+  isStatic: true,
+};

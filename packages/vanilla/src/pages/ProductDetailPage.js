@@ -1,7 +1,8 @@
-import { productStore } from "../stores";
+import { PRODUCT_ACTIONS, productStore } from "../stores";
 import { loadProductDetailForPage } from "../services";
 import { router, withLifecycle } from "../router";
 import { PageWrapper } from "./PageWrapper.js";
+import { getProduct, getProducts } from "../api/productApi.js";
 
 const loadingContent = `
   <div class="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -231,36 +232,111 @@ function ProductDetail({ product, relatedProducts = [] }) {
   `;
 }
 
+async function getServerSideProps({ params }) {
+  try {
+    const product = await getProduct(params.id);
+
+    if (!product || !product.productId) {
+      return { notFound: true };
+    }
+
+    if (product.category2) {
+      const categoryParams = {
+        category2: product.category2,
+        limit: 20,
+        page: 1,
+      };
+
+      const excludeProductId = product.productId;
+      const response = await getProducts(categoryParams);
+
+      const relatedProducts = response.products.filter((p) => p.productId !== excludeProductId);
+      return {
+        props: { product, relatedProducts },
+        head: {
+          title: `${product.title} - 쇼핑몰`,
+          description: product.description ?? "",
+        },
+      };
+    }
+
+    return {
+      props: { product, relatedProducts: [] },
+      head: {
+        title: `${product.title} - 쇼핑몰`,
+        description: product.description ?? "",
+      },
+    };
+  } catch (error) {
+    console.warn("[getServerSideProps]", error);
+    return { notFound: true };
+  }
+}
+
+async function initializeStore(data) {
+  productStore.dispatch({
+    type: PRODUCT_ACTIONS.SET_CURRENT_PRODUCT,
+    payload: data.product,
+  });
+  productStore.dispatch({
+    type: PRODUCT_ACTIONS.SET_RELATED_PRODUCTS,
+    payload: data.relatedProducts ?? [],
+  });
+}
+
+async function hydrate() {
+  if (import.meta.env.SSR) return;
+  const data = window.__INITIAL_DATA__;
+  initializeStore(data);
+}
+
+const initializeStoreFromSSR = initializeStore;
+
+const renderProductDetailPage = () => {
+  const { currentProduct: product, relatedProducts = [], error, loading } = productStore.getState();
+  return PageWrapper({
+    headerLeft: `
+      <div class="flex items-center space-x-3">
+        <button onclick="window.history.back()" 
+                class="p-2 text-gray-700 hover:text-gray-900 transition-colors">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+        </button>
+        <h1 class="text-lg font-bold text-gray-900">상품 상세</h1>
+      </div>
+    `.trim(),
+    children: loading
+      ? loadingContent
+      : error && !product
+        ? ErrorContent({ error })
+        : ProductDetail({ product, relatedProducts }),
+  });
+};
+
+const ProductDetailPageSSR = renderProductDetailPage;
+
 /**
  * 상품 상세 페이지 컴포넌트
  */
 export const ProductDetailPage = withLifecycle(
   {
     onMount: () => {
+      if (window.__HYDRATED__) {
+        window.__HYDRATED__ = false;
+        return;
+      }
       loadProductDetailForPage(router.params.id);
     },
     watches: [() => [router.params.id], () => loadProductDetailForPage(router.params.id)],
   },
-  () => {
-    const { currentProduct: product, relatedProducts = [], error, loading } = productStore.getState();
-
-    return PageWrapper({
-      headerLeft: `
-        <div class="flex items-center space-x-3">
-          <button onclick="window.history.back()" 
-                  class="p-2 text-gray-700 hover:text-gray-900 transition-colors">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-            </svg>
-          </button>
-          <h1 class="text-lg font-bold text-gray-900">상품 상세</h1>
-        </div>
-      `.trim(),
-      children: loading
-        ? loadingContent
-        : error && !product
-          ? ErrorContent({ error })
-          : ProductDetail({ product, relatedProducts }),
-    });
-  },
+  renderProductDetailPage,
 );
+
+export default {
+  page: ProductDetailPage,
+  ssrRender: ProductDetailPageSSR,
+  getServerSideProps,
+  initializeStoreFromSSR,
+  hydrate,
+};

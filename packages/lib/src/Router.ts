@@ -1,4 +1,4 @@
-import { createObserver } from "./createObserver";
+import { createObserver } from "./lib/createObserver";
 import type { AnyFunction, StringRecord } from "./types";
 
 interface Route<Handler extends AnyFunction> {

@@ -20,6 +20,13 @@ interface ProductsResponse {
   };
 }
 
+const getBaseUrl = () => {
+  if (import.meta.env.SSR) {
+    return "http://localhost:5174";
+  }
+  return "";
+};
+
 export async function getProducts(params: StringRecord = {}): Promise<ProductsResponse> {
   const { limit = 20, search = "", category1 = "", category2 = "", sort = "price_asc" } = params;
   const page = params.current ?? params.page ?? 1;
@@ -33,19 +40,17 @@ export async function getProducts(params: StringRecord = {}): Promise<ProductsRe
     sort,
   });
 
-  const response = await fetch(`/api/products?${searchParams}`);
+  const response = await fetch(`${getBaseUrl()}/api/products?${searchParams}`);
 
   return await response.json();
 }
 
-// 상품 상세 조회
 export async function getProduct(productId: string): Promise<Product> {
-  const response = await fetch(`/api/products/${productId}`);
+  const response = await fetch(`${getBaseUrl()}/api/products/${productId}`);
   return await response.json();
 }
 
-// 카테고리 목록 조회
 export async function getCategories(): Promise<Categories> {
-  const response = await fetch("/api/categories");
+  const response = await fetch(`${getBaseUrl()}/api/categories`);
   return await response.json();
 }
