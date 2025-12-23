@@ -78,9 +78,7 @@ export class Router<Handler extends (...args: any[]) => any> {
     return this.#route?.handler;
   }
 
-  subscribe(fn: () => void) {
-    return this.#observer.subscribe(fn);
-  }
+  subscribe = this.#observer.subscribe;
 
   addRoute(pathPattern: string, handler: Handler, meta = {}) {
     const compiled = Router.compilePath(pathPattern);
