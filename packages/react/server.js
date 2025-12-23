@@ -22,7 +22,7 @@ if (!prod) {
   });
   app.use(vite.middlewares);
 
-  // Start MSW server in development (using Vite's SSR module loading)
+  // Start MSW server in development
   const { server: mswServer } = await vite.ssrLoadModule("/src/mocks/node.ts");
   mswServer.listen({ onUnhandledRequest: "bypass" });
 } else {

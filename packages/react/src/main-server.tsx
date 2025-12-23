@@ -1,9 +1,9 @@
-import { Router, createServerRuntime } from "@hanghae-plus/lib";
 import { renderToString } from "react-dom/server";
 import { pageConfigs, type SSRContext } from "./pages/page-configs";
 import { HomePage, ProductDetailPage, NotFoundPage } from "./pages";
 import { ModalProvider, ToastProvider } from "./components";
-import type { ComponentType } from "react";
+import type { ComponentType, FunctionComponent } from "react";
+import { router as ssrRouter } from "./router";
 
 const routeComponents: Record<string, ComponentType> = {
   "/": HomePage,
@@ -12,19 +12,15 @@ const routeComponents: Record<string, ComponentType> = {
 };
 
 export const render = async (url: string) => {
-  const runtime = createServerRuntime(url);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const ssrRouter = new Router<any>(runtime, "");
-
   Object.keys(pageConfigs).forEach((route) => {
     const config = pageConfigs[route];
-    ssrRouter.addRoute(route, routeComponents[route], {
+    ssrRouter.addRoute(route, routeComponents[route] as FunctionComponent, {
       getServerSideProps: config.getServerSideProps,
       initializeStoreFromSSR: config.initializeStoreFromSSR,
     });
   });
 
-  ssrRouter.start();
+  ssrRouter.sync(url);
 
   const ctx: SSRContext = {
     params: ssrRouter.params,
