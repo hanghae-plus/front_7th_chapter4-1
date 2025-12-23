@@ -3,7 +3,7 @@ import { pageConfigs, type SSRContext } from "./pages/page-configs";
 import { HomePage, ProductDetailPage, NotFoundPage } from "./pages";
 import { ModalProvider, ToastProvider } from "./components";
 import type { ComponentType, FunctionComponent } from "react";
-import { router as ssrRouter } from "./router";
+import { createSSRRouter, syncServerRouter } from "./router";
 
 const routeComponents: Record<string, ComponentType> = {
   "/": HomePage,
@@ -11,23 +11,37 @@ const routeComponents: Record<string, ComponentType> = {
   "/404": NotFoundPage,
 };
 
-export const render = async (url: string) => {
+/**
+ * Register routes to the given router instance.
+ * Routes are registered once per router instance (addRoute prevents duplicates).
+ */
+function registerRoutes(router: ReturnType<typeof createSSRRouter>) {
   Object.keys(pageConfigs).forEach((route) => {
     const config = pageConfigs[route];
-    ssrRouter.addRoute(route, routeComponents[route] as FunctionComponent, {
+    router.addRoute(route, routeComponents[route] as FunctionComponent, {
       getServerSideProps: config.getServerSideProps,
       initializeStoreFromSSR: config.initializeStoreFromSSR,
     });
   });
+}
 
-  ssrRouter.sync(url);
+export const render = async (url: string) => {
+  // Create a fresh router for each request to avoid state pollution
+  const router = createSSRRouter(url);
+  registerRoutes(router);
+
+  // Sync the singleton router so hooks (useRouterQuery etc.) get correct values
+  syncServerRouter(url);
+
+  // Router is already synced with the URL from createSSRRouter
+  router.sync(url);
 
   const ctx: SSRContext = {
-    params: ssrRouter.params,
-    query: ssrRouter.query,
+    params: router.params,
+    query: router.query,
   };
 
-  const matchedRoute = ssrRouter.route;
+  const matchedRoute = router.route;
   const getServerSideProps = matchedRoute?.meta?.getServerSideProps as
     | ((ctx: SSRContext) => Promise<{
         props?: Record<string, unknown>;
@@ -67,7 +81,7 @@ export const render = async (url: string) => {
   const props = serverSideData.props ?? {};
   const head = serverSideData.head ?? { title: "쇼핑몰", description: "상품 목록" };
 
-  const PageComponent = ssrRouter.target as ComponentType | undefined;
+  const PageComponent = router.target as ComponentType | undefined;
 
   const html = PageComponent
     ? renderToString(
