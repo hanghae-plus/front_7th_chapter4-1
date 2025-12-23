@@ -1,11 +1,25 @@
-import { ProductDetail, useLoadProductDetail, useProductStore } from "../entities";
+import { useEffect } from "react";
+import { ProductDetail } from "../entities";
+import { productStore, type initialProductState } from "../entities/products/productStore";
+import { loadProductDetailForPage } from "../entities/products/productUseCase";
+import { useRouterParams } from "../router";
 import { PageWrapper } from "./PageWrapper";
 import { ErrorContent, PublicImage } from "../components";
+import { useStore } from "@hanghae-plus/lib";
 
 export const ProductDetailPage = () => {
-  const { currentProduct: product, error, loading } = useProductStore();
+  const state = useStore(productStore) as typeof initialProductState;
+  const { currentProduct: product, error, loading } = state;
+  const productId = useRouterParams((params) => params.id) as string;
 
-  useLoadProductDetail();
+  useEffect(() => {
+    if (window.__HYDRATED__) {
+      window.__HYDRATED__ = false;
+      return;
+    }
+
+    loadProductDetailForPage(productId);
+  }, [productId]);
 
   return (
     <PageWrapper

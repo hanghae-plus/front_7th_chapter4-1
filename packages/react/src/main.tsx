@@ -1,7 +1,8 @@
 import { App } from "./App";
 import { router } from "./router";
 import { BASE_URL } from "./constants.ts";
-import { createRoot } from "react-dom/client";
+import { hydrateRoot } from "react-dom/client";
+import { pageConfigs } from "./pages/page-configs.ts";
 
 const enableMocking = () =>
   import("./mocks/browser").then(({ worker }) =>
@@ -16,11 +17,16 @@ const enableMocking = () =>
 function main() {
   router.start();
 
+  const currentRoute = router.route;
+  const pageConfig = pageConfigs[currentRoute?.path ?? ""];
+  if (pageConfig && window.__INITIAL_DATA__) {
+    pageConfig.initializeStoreFromSSR?.(window.__INITIAL_DATA__);
+  }
+
   const rootElement = document.getElementById("root")!;
-  createRoot(rootElement).render(<App />);
+  hydrateRoot(rootElement, <App />);
 }
 
-// 애플리케이션 시작
 if (import.meta.env.MODE !== "test") {
   enableMocking().then(main);
 } else {

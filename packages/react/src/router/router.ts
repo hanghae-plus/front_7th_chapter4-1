@@ -1,7 +1,13 @@
-// 글로벌 라우터 인스턴스
-import { Router, createBrowserRuntime } from "@hanghae-plus/lib";
+import { Router, createBrowserRuntime, createServerRuntime } from "@hanghae-plus/lib";
 import { BASE_URL } from "../constants";
 import type { FunctionComponent } from "react";
 
-const runtime = createBrowserRuntime(BASE_URL);
+const createRuntime = () => {
+  if (typeof window === "undefined") {
+    return createServerRuntime("/");
+  }
+  return createBrowserRuntime(BASE_URL);
+};
+
+const runtime = createRuntime();
 export const router = new Router<FunctionComponent>(runtime, BASE_URL);

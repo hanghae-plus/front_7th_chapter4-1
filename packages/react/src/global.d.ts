@@ -15,7 +15,7 @@ type InitialData = HomePageInitialData | ProductDetailInitialData | Record<strin
 
 declare global {
   interface Window {
-    __INITIAL_DATA__?: InitialData;
+    __INITIAL_DATA__?: InitialData | Record<string, unknown>;
     __HYDRATED__?: boolean;
   }
 }

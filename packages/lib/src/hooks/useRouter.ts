@@ -1,4 +1,4 @@
-import type { RouterInstance } from "../Router";
+import type { RouterInstance } from "../lib/router";
 import type { AnyFunction } from "../types";
 import { useSyncExternalStore } from "react";
 import { useShallowSelector } from "./useShallowSelector";

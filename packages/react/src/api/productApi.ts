@@ -45,13 +45,11 @@ export async function getProducts(params: StringRecord = {}): Promise<ProductsRe
   return await response.json();
 }
 
-// 상품 상세 조회
 export async function getProduct(productId: string): Promise<Product> {
   const response = await fetch(`${getBaseUrl()}/api/products/${productId}`);
   return await response.json();
 }
 
-// 카테고리 목록 조회
 export async function getCategories(): Promise<Categories> {
   const response = await fetch(`${getBaseUrl()}/api/categories`);
   return await response.json();
