@@ -1,2 +1,2 @@
 export * from "./Router";
-export * from "../platform";
+export * from "./adapters";
