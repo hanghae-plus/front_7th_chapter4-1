@@ -1,13 +1,14 @@
 import { getCategories, getProduct, getProducts } from "../../api/productApi";
-import { router } from "../../router";
 import type { StringRecord } from "../../types";
 import { initialProductState, PRODUCT_ACTIONS, productStore } from "./productStore";
 import { isNearBottom } from "../../utils";
+import type { RouterType } from "../../router";
+import { useRouterContext } from "../../router/hooks/useRouterContext";
 
 const createErrorMessage = (error: unknown, defaultMessage = "알 수 없는 오류 발생") =>
   error instanceof Error ? error.message : defaultMessage;
 
-export const loadProductsAndCategories = async () => {
+const loadProductsAndCategories = async (router: RouterType) => {
   router.query = { current: undefined }; // 항상 첫 페이지로 초기화
   productStore.dispatch({
     type: PRODUCT_ACTIONS.SETUP,
@@ -47,7 +48,7 @@ export const loadProductsAndCategories = async () => {
   }
 };
 
-export const loadProducts = async (resetList = true) => {
+const loadProducts = async (resetList = true, query: StringRecord) => {
   try {
     productStore.dispatch({
       type: PRODUCT_ACTIONS.SETUP,
@@ -57,7 +58,7 @@ export const loadProducts = async (resetList = true) => {
     const {
       products,
       pagination: { total },
-    } = await getProducts(router.query);
+    } = await getProducts(query);
     const payload = { products, totalCount: total };
 
     // 페이지 리셋이면 새로 설정, 아니면 기존에 추가
@@ -75,7 +76,7 @@ export const loadProducts = async (resetList = true) => {
   }
 };
 
-export const loadMoreProducts = async () => {
+const loadMoreProducts = async (router: RouterType) => {
   const state = productStore.getState();
   const hasMore = state.products.length < state.totalCount;
 
@@ -84,21 +85,21 @@ export const loadMoreProducts = async () => {
   }
 
   router.query = { current: Number(router.query.current ?? 1) + 1 };
-  await loadProducts(false);
+  await loadProducts(false, router.query);
 };
-export const searchProducts = (search: string) => {
+const searchProducts = (search: string, router: RouterType) => {
   router.query = { search, current: 1 };
 };
 
-export const setCategory = (categoryData: StringRecord) => {
+const setCategory = (categoryData: StringRecord, router: RouterType) => {
   router.query = { ...categoryData, current: 1 };
 };
 
-export const setSort = (sort: string) => {
+const setSort = (sort: string, router: RouterType) => {
   router.query = { sort, current: 1 };
 };
 
-export const setLimit = (limit: number) => {
+const setLimit = (limit: number, router: RouterType) => {
   router.query = { limit, current: 1 };
 };
 
@@ -172,7 +173,7 @@ export const loadRelatedProducts = async (category2: string, excludeProductId: s
   }
 };
 
-export const loadNextProducts = async () => {
+const loadNextProducts = async (router: RouterType) => {
   // 현재 라우트가 홈이 아니면 무한 스크롤 비활성화
   if (router.route?.path !== "/") {
     return;
@@ -188,9 +189,24 @@ export const loadNextProducts = async () => {
     }
 
     try {
-      await loadMoreProducts();
+      await loadMoreProducts(router);
     } catch (error) {
       console.error("무한 스크롤 로드 실패:", error);
     }
   }
+};
+
+export const useProductUseCase = () => {
+  const router = useRouterContext();
+
+  return {
+    loadProductsAndCategories: () => loadProductsAndCategories(router),
+    loadProducts: (resetList = true) => loadProducts(resetList, router.query),
+    loadMoreProducts: () => loadMoreProducts(router),
+    searchProducts: (search: string) => searchProducts(search, router),
+    setCategory: (categoryData: StringRecord) => setCategory(categoryData, router),
+    setSort: (sort: string) => setSort(sort, router),
+    setLimit: (limit: number) => setLimit(limit, router),
+    loadNextProducts: () => loadNextProducts(router),
+  } as const;
 };

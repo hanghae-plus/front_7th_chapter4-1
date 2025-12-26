@@ -1,6 +1,8 @@
 import { useRouter } from "@hanghae-plus/lib";
-import { router } from "../router";
+import { useRouterContext } from "./useRouterContext";
 
 export const useRouterQuery = () => {
-  return useRouter(router, ({ query }) => query);
+  const router = useRouterContext();
+
+  return useRouter(router, ({ query }) => query ?? {});
 };

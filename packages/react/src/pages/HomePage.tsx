@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { loadNextProducts, loadProductsAndCategories, ProductList, SearchBar } from "../entities";
+import { ProductList, SearchBar, useProductUseCase } from "../entities";
 import { PageWrapper } from "./PageWrapper";
 
 const headerLeft = (
@@ -13,20 +13,22 @@ const headerLeft = (
 // 무한 스크롤 이벤트 등록
 let scrollHandlerRegistered = false;
 
-const registerScrollHandler = () => {
-  if (scrollHandlerRegistered) return;
-
-  window.addEventListener("scroll", loadNextProducts);
-  scrollHandlerRegistered = true;
-};
-
-const unregisterScrollHandler = () => {
-  if (!scrollHandlerRegistered) return;
-  window.removeEventListener("scroll", loadNextProducts);
-  scrollHandlerRegistered = false;
-};
-
 export const HomePage = () => {
+  const { loadNextProducts, loadProductsAndCategories } = useProductUseCase();
+
+  const registerScrollHandler = () => {
+    if (scrollHandlerRegistered) return;
+
+    window.addEventListener("scroll", loadNextProducts);
+    scrollHandlerRegistered = true;
+  };
+
+  const unregisterScrollHandler = () => {
+    if (!scrollHandlerRegistered) return;
+    window.removeEventListener("scroll", loadNextProducts);
+    scrollHandlerRegistered = false;
+  };
+
   useEffect(() => {
     registerScrollHandler();
     loadProductsAndCategories();
@@ -46,3 +48,5 @@ export const HomePage = () => {
     </PageWrapper>
   );
 };
+
+HomePage.getTitle = async () => "쇼핑몰 - 홈";

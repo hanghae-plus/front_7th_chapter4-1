@@ -17,9 +17,9 @@ export const HomePage = withLifecycle(
       () => loadProducts(true),
     ],
   },
-  () => {
+  (_, ssrQuery) => {
     const productState = productStore.getState();
-    const { search: searchQuery, limit, sort, category1, category2 } = router.query;
+    const { search: searchQuery, limit, sort, category1, category2 } = ssrQuery || router.query;
     const { products, loading, error, totalCount, categories } = productState;
     const category = { category1, category2 };
     const hasMore = products.length < totalCount;
@@ -48,3 +48,5 @@ export const HomePage = withLifecycle(
     });
   },
 );
+
+HomePage.getTitle = async () => "쇼핑몰 - 홈";

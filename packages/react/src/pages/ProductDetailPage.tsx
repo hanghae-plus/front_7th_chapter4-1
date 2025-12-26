@@ -1,6 +1,8 @@
 import { ProductDetail, useLoadProductDetail, useProductStore } from "../entities";
 import { PageWrapper } from "./PageWrapper";
 import { ErrorContent, PublicImage } from "../components";
+import type { StringRecord } from "@hanghae-plus/lib";
+import { getProduct } from "../api/productApi";
 
 export const ProductDetailPage = () => {
   const { currentProduct: product, error, loading } = useProductStore();
@@ -35,4 +37,10 @@ export const ProductDetailPage = () => {
       </div>
     </PageWrapper>
   );
+};
+
+ProductDetailPage.getTitle = async ({ id }: StringRecord) => {
+  const product = await getProduct(id);
+
+  return `${product.title} - 쇼핑몰`;
 };

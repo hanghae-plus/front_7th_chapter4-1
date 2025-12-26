@@ -2,6 +2,7 @@ import { productStore } from "../stores";
 import { loadProductDetailForPage } from "../services";
 import { router, withLifecycle } from "../router";
 import { PageWrapper } from "./PageWrapper.js";
+import { getProduct } from "../api/productApi.js";
 
 const loadingContent = `
   <div class="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -264,3 +265,9 @@ export const ProductDetailPage = withLifecycle(
     });
   },
 );
+
+ProductDetailPage.getTitle = async ({ id }) => {
+  const product = await getProduct(id);
+
+  return `${product.title} - 쇼핑몰`;
+};

@@ -12,13 +12,16 @@
     "lint:fix": "pnpm run -r lint:fix",
     "tsc": "pnpm run -r tsc",
     "prettier:write": "prettier --write ./packages/*/src",
-    "serve:test": "concurrently -n \"Vanilla,React\" -c \"bgMagenta,bgGreen\" \"pnpm -F @hanghae-plus/shopping-vanilla serve:test\" \"pnpm -F @hanghae-plus/shopping-react serve:test\"",
+    "serve:test": "concurrently \"pnpm -F @hanghae-plus/shopping-vanilla serve:test\" \"pnpm -F @hanghae-plus/shopping-react serve:test\"",
     "test:unit": "pnpm -F @hanghae-plus/lib test",
     "test:e2e": "playwright test",
     "test:e2e:basic": "playwright test 'basic'",
     "test:e2e:advanced": "playwright test 'advanced'",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:report": "npx playwright show-report",
+    "test:e2e:csr": "cross-env TEST_ENV=csr playwright test 'advanced' --grep 'CSR E2E'",
+    "test:e2e:ssr": "cross-env TEST_ENV=ssr playwright test 'advanced' --grep 'SSR E2E'",
+    "test:e2e:ssg": "cross-env TEST_ENV=ssg playwright test 'advanced' --grep 'SSG E2E'",
     "prepare": "husky",
     "gh-pages": "pnpm run build && gh-pages -d dist"
   },
@@ -38,6 +41,8 @@
     "@types/node": "^24.0.13",
     "@vitest/coverage-v8": "latest",
     "@vitest/ui": "latest",
+    "concurrently": "^9.2.1",
+    "cross-env": "^7.0.3",
     "eslint": "^9.16.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.2.1",
@@ -46,10 +51,11 @@
     "husky": "^9.1.7",
     "lint-staged": "^15.2.11",
     "prettier": "^3.4.2",
+    "rimraf": "^6.0.1",
+    "shx": "^0.3.4",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.36.0",
     "vite": "npm:rolldown-vite@latest",
-    "vitest": "latest",
-    "concurrently": "latest"
+    "vitest": "latest"
   }
 }

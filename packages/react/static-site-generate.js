@@ -1,18 +1,47 @@
-import { renderToString } from "react-dom/server";
-import { createElement } from "react";
 import fs from "fs";
+import { mswServer } from "./src/mocks/node.js";
+
+mswServer.listen({
+  onUnhandledRequest: "warn",
+});
+
+const DIST_DIR = "../../dist/react";
+const SSR_DIR = "./dist/react-ssr";
 
 async function generateStaticSite() {
-  // HTML 템플릿 읽기
-  const template = fs.readFileSync("../../dist/react/index.html", "utf-8");
+  const template = await fs.promises.readFile(`./dist/react/index.html`, "utf-8");
+  const { render } = await import(`${SSR_DIR}/main-server.js`);
 
-  // 어플리케이션 렌더링하기
-  const appHtml = renderToString(createElement("div", null, "안녕하세요"));
+  const pages = await getPages();
 
-  // 결과 HTML 생성하기
-  const result = template.replace("<!--app-html-->", appHtml);
-  fs.writeFileSync("../../dist/react/index.html", result);
+  for (const page of pages) {
+    const { html, head, initialData } = await render(`${page.url}`);
+    const initialDataScript = `<script>window.__INITIAL_DATA__ = ${JSON.stringify(initialData)};</script>`;
+    const result = template
+      .replace("<!--app-html-->", html)
+      .replace("<!--app-head-->", head)
+      .replace("</head>", `${initialDataScript}</head>`);
+
+    const dir = page.filePath.split("/").slice(0, -1).join("/");
+    await fs.promises.mkdir(dir, { recursive: true });
+    await fs.writeFileSync(page.filePath, result);
+  }
 }
 
-// 실행
-generateStaticSite();
+async function getPages() {
+  const { getProducts } = await import(`${SSR_DIR}/main-server.js`);
+  const { products } = await getProducts({ limit: 20 });
+
+  return [
+    { url: "/", filePath: `${DIST_DIR}/index.html` },
+    { url: "/404", filePath: `${DIST_DIR}/404.html` },
+    ...products.map(({ productId }) => ({
+      url: `/product/${productId}/`,
+      filePath: `${DIST_DIR}/product/${productId}/index.html`,
+    })),
+  ];
+}
+
+await generateStaticSite();
+
+mswServer.close();

@@ -1,3 +1,5 @@
+import { isServer } from "../utils/ssrUtils";
+
 const lifeCycles = new WeakMap();
 const pageState = { current: null, previous: null };
 const initLifecycle = { mount: null, unmount: null, watches: [], deps: [], mounted: false };
@@ -29,6 +31,9 @@ const depsChanged = (newDeps, oldDeps) => {
 // 페이지 마운트 처리
 const mount = (page) => {
   const lifecycle = getPageLifecycle(page);
+
+  if (isServer()) return;
+
   if (lifecycle.mounted) return;
 
   // 마운트 콜백들 실행
@@ -40,6 +45,8 @@ const mount = (page) => {
 // 페이지 언마운트 처리
 const unmount = (pageFunction) => {
   const lifecycle = getPageLifecycle(pageFunction);
+
+  if (isServer()) return;
 
   if (!lifecycle.mounted) return;
 
