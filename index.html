@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SSR/SSG 쇼핑몰 데모</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+        sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <div class="min-h-screen flex items-center justify-center px-4">
+    <div class="max-w-2xl w-full">
+      <div class="bg-white rounded-lg shadow-lg p-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2 text-center">
+          SSR/SSG 쇼핑몰 데모
+        </h1>
+        <p class="text-gray-600 text-center mb-8">
+          Server-Side Rendering과 Static Site Generation 데모를 확인해보세요
+        </p>
+
+        <div class="grid md:grid-cols-2 gap-6">
+          <!-- Vanilla JavaScript -->
+          <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+            <h2 class="text-xl font-bold text-gray-900 mb-2">Vanilla JavaScript</h2>
+            <p class="text-gray-600 mb-4 text-sm">
+              바닐라 자바스크립트로 구현한 SSR/SSG 데모
+            </p>
+            <div class="space-y-2">
+              <a
+                href="/front_7th_chapter4-1/vanilla/"
+                class="block w-full bg-blue-600 text-white text-center py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Vanilla 데모 보기
+              </a>
+            </div>
+          </div>
+
+          <!-- React -->
+          <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+            <h2 class="text-xl font-bold text-gray-900 mb-2">React</h2>
+            <p class="text-gray-600 mb-4 text-sm">
+              React로 구현한 SSR/SSG 데모
+            </p>
+            <div class="space-y-2">
+              <a
+                href="/front_7th_chapter4-1/react/"
+                class="block w-full bg-blue-600 text-white text-center py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+              >
+                React 데모 보기
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-gray-200">
+          <p class="text-sm text-gray-500 text-center">
+            모든 페이지는 Static Site Generation (SSG) 방식으로 빌드되었습니다.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+
